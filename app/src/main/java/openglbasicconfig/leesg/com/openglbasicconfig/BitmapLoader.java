@@ -1,0 +1,41 @@
+package openglbasicconfig.leesg.com.openglbasicconfig;
+
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.opengl.GLES20;
+import android.opengl.GLUtils;
+
+/**
+ * Created by LeeSG on 2015-08-24.
+ */
+public class BitmapLoader {
+    private Bitmap bitmap;
+    private int imageHandle;
+    private final android.graphics.Matrix flip = new android.graphics.Matrix();
+    Context mContext;
+
+    public BitmapLoader (Context mainContext) {
+        mContext = mainContext;
+        flip.postScale(1.0f, -1.0f);
+    }
+    public int getImageHandle(String target, boolean needFlip) {
+        bitmap = BitmapFactory.decodeResource(mContext.getResources(), mContext.getResources().getIdentifier(target, null, mContext.getPackageName()));
+        if(needFlip) {
+            bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), flip, true);
+        }
+        imageHandle = getImageHandle(bitmap);
+        return imageHandle;
+    }
+    private int getImageHandle(Bitmap bitmap){
+        int[] texturenames = new int[1];
+        GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+        GLES20.glGenTextures(1,texturenames,0);
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texturenames[0]);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
+        return texturenames[0];
+    }
+}
