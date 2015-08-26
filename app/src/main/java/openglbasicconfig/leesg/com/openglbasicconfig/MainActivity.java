@@ -12,6 +12,12 @@ import android.view.MenuItem;
 import android.view.Window;
 import android.view.WindowManager;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
 public class MainActivity extends Activity {
     private MainGLSurfaceView mGLSurfaceView;
     //효과음 설정
@@ -40,6 +46,16 @@ public class MainActivity extends Activity {
             mSoundButton = mSoundPool.load(descriptorBtn, 1);
         }
         catch(Exception exAsset){}
+    }
+
+    public BufferedReader getAssetFile(String filename) {
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new InputStreamReader(getAssets().open(filename)));
+        } catch (IOException e) {
+            System.err.println(filename);
+        }
+        return reader;
     }
     // 버튼 효과음
     public void soundButton() {

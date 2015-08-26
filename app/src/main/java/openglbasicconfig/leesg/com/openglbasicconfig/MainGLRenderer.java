@@ -37,12 +37,15 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     BitmapLoader mBitmapLoader;
     Camera mCamera;
     //객체
-    Sphere mSphere;
     Square mIntroScreen;
     Button mIntroButtons[];
     Square mStageScreen;
     Button mStageButtons[];
     Button mBackButton;
+    //3D 오브젝트
+    Sphere mSphere;
+    Mesh sample;
+    Mesh sample3;
     //생성자
     public MainGLRenderer(MainActivity activity, int width, int height) {
         mActivity = activity;
@@ -99,11 +102,13 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         }
         //initialize mesh
         mSphere = new Sphere(mProgramImage);
+        sample = new Mesh(mProgramImage, mActivity);
+        sample3 = new Mesh(mProgramImage, mActivity);
         //initialize camera
         mCamera = new Camera();
-        mCamera.setEye(0f, 0f, 25f);
+        mCamera.setEye(0f, 250f, 0f);
         mCamera.setAt(0f, 0f, 0f);
-        mCamera.setUp(0f, 1f, 0f);
+        mCamera.setUp(0f, 0f, -1f);
         mCamera.setViewBox((float) Math.PI / 6.0f, (float) mDeviceWidth / (float) mDeviceHeight, 1.0f, 100000.0f);
         mCamera.setViewMatrix();
         mCamera.setTwoDViewMatrix();
@@ -115,6 +120,11 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mBitmapLoader = new BitmapLoader(mContext);
         //지구
         mSphere.setBitmap(mBitmapLoader.getImageHandle("drawable/earthmap", true), 1024, 512);
+        //sample
+        sample.setBitmap(mBitmapLoader.getImageHandle("drawable/missilesample", true));
+        sample.loadOBJ("missile");
+        sample3.setBitmap(mBitmapLoader.getImageHandle("drawable/sample3", true));
+        sample3.loadOBJ("sample3");
         //intro 화면
         mIntroScreen.setBitmap(mBitmapLoader.getImageHandle("drawable/intro", false), mScreenConfig.getmVirtualWidth(), mScreenConfig.getmVirtualHeight());
         mIntroScreen.setPos(mScreenConfig.getmVirtualWidth() / 2, mScreenConfig.getmVirtualHeight() / 2);
@@ -209,11 +219,15 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         //model matrix 생성
         Matrix.setIdentityM(tempMatrix, 0);
         Matrix.setIdentityM(mModelMatrix, 0);
-        Matrix.scaleM(tempMatrix, 0, 2f, 2f, 2f);
+        Matrix.scaleM(tempMatrix, 0, 0.1f, 0.1f, 0.1f);
+        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.setIdentityM(tempMatrix, 0);
+        Matrix.rotateM(tempMatrix, 0, (float) (mLastTime/10 % 360), 0f, 0.0001f, 0.0005f);
         Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
         //최종 P * V * M 매트릭스
         Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
-        mSphere.draw(mMVPMatrix);
+        //mSphere.draw(mMVPMatrix);
+        sample3.draw(mMVPMatrix);
     }
 
     //터치 이벤트
