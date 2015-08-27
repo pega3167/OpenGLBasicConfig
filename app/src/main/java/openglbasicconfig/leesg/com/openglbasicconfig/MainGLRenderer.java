@@ -45,7 +45,6 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     //3D 오브젝트
     Sphere mSphere;
     Mesh sample;
-    Mesh sample3;
     //생성자
     public MainGLRenderer(MainActivity activity, int width, int height) {
         mActivity = activity;
@@ -103,7 +102,6 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         //initialize mesh
         mSphere = new Sphere(mProgramImage);
         sample = new Mesh(mProgramImage, mActivity);
-        sample3 = new Mesh(mProgramImage, mActivity);
         //initialize camera
         mCamera = new Camera();
         mCamera.setEye(0f, 250f, 0f);
@@ -123,8 +121,6 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         //sample
         sample.setBitmap(mBitmapLoader.getImageHandle("drawable/missilesample", true));
         sample.loadOBJ("missile");
-        sample3.setBitmap(mBitmapLoader.getImageHandle("drawable/sample3", true));
-        sample3.loadOBJ("sample3");
         //intro 화면
         mIntroScreen.setBitmap(mBitmapLoader.getImageHandle("drawable/intro", false), mScreenConfig.getmVirtualWidth(), mScreenConfig.getmVirtualHeight());
         mIntroScreen.setPos(mScreenConfig.getmVirtualWidth() / 2, mScreenConfig.getmVirtualHeight() / 2);
@@ -216,18 +212,20 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         mBackButton.draw(orth);
         float[] tempMatrix = new float[16];
-        //model matrix 생성
+        //model matrix 계산
         Matrix.setIdentityM(tempMatrix, 0);
         Matrix.setIdentityM(mModelMatrix, 0);
-        Matrix.scaleM(tempMatrix, 0, 0.1f, 0.1f, 0.1f);
+        Matrix.scaleM(tempMatrix, 0, 0.001f, 0.001f, 0.001f);
         Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
         Matrix.setIdentityM(tempMatrix, 0);
-        Matrix.rotateM(tempMatrix, 0, (float) (mLastTime/10 % 360), 0f, 0.0001f, 0.0005f);
+        Matrix.rotateM(tempMatrix, 0, (float) (mLastTime / 10 % 360), 0f, 0.0f, 0.001f);
+        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.setIdentityM(tempMatrix, 0);
+        Matrix.rotateM(tempMatrix, 0, (float) (mLastTime / 10 % 360), 0f, 0.0001f, 0.0f);
         Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
         //최종 P * V * M 매트릭스
         Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
-        //mSphere.draw(mMVPMatrix);
-        sample3.draw(mMVPMatrix);
+        sample.draw(mMVPMatrix);
     }
 
     //터치 이벤트
