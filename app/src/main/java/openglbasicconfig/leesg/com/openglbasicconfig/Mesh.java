@@ -43,14 +43,16 @@ public class Mesh {
 
 
     public void loadOBJ(String filename) {
+        //obj파일의 정보를 openGL redner에 맞게 변환하여 저장할 저장소
         List<Float> vertices = new ArrayList();
         List<Float> normals = new ArrayList();
         List<Float> textures = new ArrayList();
-        // obj파일의 v, vt, vn을 쭉 읽어서 temp에 저장한 뒤 f 를 읽으면서 위의 리스트에 저장한다.
+        List<Short> indices = new ArrayList();
+        // obj파일의 정보를 일시적으로 변환하기 전 상태로 저장할 저장소
         List<Float> temp_vertices = new ArrayList();
         List<Float> temp_normals = new ArrayList();
         List<Float> temp_textures = new ArrayList();
-        List<Short> indices = new ArrayList();
+        //obj파일 읽기
         BufferedReader reader = mActivity.getAssetFile(filename + ".obj");
         String line;
         int i = 0;
@@ -82,35 +84,35 @@ public class Mesh {
                 String[] vertex2 = currentLine[2].split("/");
                 String[] vertex3 = currentLine[3].split("/");
                 //vertex 1
-                vertices.add(temp_vertices.get((Integer.parseInt(vertex1[0]) - 1) * 3 + 0));
+                vertices.add(temp_vertices.get((Integer.parseInt(vertex1[0]) - 1) * 3));
                 vertices.add(temp_vertices.get((Integer.parseInt(vertex1[0]) - 1) * 3 + 1));
                 vertices.add(temp_vertices.get((Integer.parseInt(vertex1[0]) - 1) * 3 + 2));
-                textures.add(temp_textures.get((Integer.parseInt(vertex1[1]) - 1) * 2 + 0));
+                textures.add(temp_textures.get((Integer.parseInt(vertex1[1]) - 1) * 2));
                 textures.add(temp_textures.get((Integer.parseInt(vertex1[1]) - 1) * 2 + 1));
-                normals.add(temp_normals.get((Integer.parseInt(vertex1[2]) - 1) * 3 + 0));
+                normals.add(temp_normals.get((Integer.parseInt(vertex1[2]) - 1) * 3));
                 normals.add(temp_normals.get((Integer.parseInt(vertex1[2]) - 1) * 3 + 1));
                 normals.add(temp_normals.get((Integer.parseInt(vertex1[2]) - 1) * 3 + 2));
                 indices.add((short) i);
 
                 i++;
                 //vertex 2
-                vertices.add(temp_vertices.get( (Integer.parseInt(vertex2[0]) - 1) * 3 + 0));
+                vertices.add(temp_vertices.get( (Integer.parseInt(vertex2[0]) - 1) * 3));
                 vertices.add(temp_vertices.get((Integer.parseInt(vertex2[0]) - 1) * 3 + 1));
                 vertices.add(temp_vertices.get((Integer.parseInt(vertex2[0]) - 1) * 3 + 2));
-                textures.add(temp_textures.get((Integer.parseInt(vertex2[1]) - 1) * 2 + 0));
+                textures.add(temp_textures.get((Integer.parseInt(vertex2[1]) - 1) * 2));
                 textures.add(temp_textures.get((Integer.parseInt(vertex2[1]) - 1) * 2 + 1));
-                normals.add(temp_normals.get((Integer.parseInt(vertex2[2]) - 1) * 3 + 0));
+                normals.add(temp_normals.get((Integer.parseInt(vertex2[2]) - 1) * 3));
                 normals.add(temp_normals.get((Integer.parseInt(vertex2[2]) - 1) * 3 + 1));
                 normals.add(temp_normals.get((Integer.parseInt(vertex2[2]) - 1) * 3 + 2));
                 indices.add((short)i);
                 i++;
                 //vertex 3
-                vertices.add(temp_vertices.get((Integer.parseInt(vertex3[0]) - 1) * 3 + 0));
+                vertices.add(temp_vertices.get((Integer.parseInt(vertex3[0]) - 1) * 3));
                 vertices.add(temp_vertices.get((Integer.parseInt(vertex3[0]) - 1) * 3 + 1));
                 vertices.add(temp_vertices.get((Integer.parseInt(vertex3[0]) - 1) * 3 + 2));
-                textures.add(temp_textures.get((Integer.parseInt(vertex3[1]) - 1) * 2 + 0));
+                textures.add(temp_textures.get((Integer.parseInt(vertex3[1]) - 1) * 2));
                 textures.add(temp_textures.get((Integer.parseInt(vertex3[1]) - 1) * 2 + 1));
-                normals.add(temp_normals.get((Integer.parseInt(vertex3[2]) - 1) * 3 + 0));
+                normals.add(temp_normals.get((Integer.parseInt(vertex3[2]) - 1) * 3));
                 normals.add(temp_normals.get((Integer.parseInt(vertex3[2]) - 1) * 3 + 1));
                 normals.add(temp_normals.get((Integer.parseInt(vertex3[2]) - 1) * 3 + 2));
                 indices.add((short)i);
@@ -146,12 +148,13 @@ public class Mesh {
         }catch (Exception e) {
             e.printStackTrace();
         }
-
         vertexBuffer.position(0);
         texBuffer.position(0);
         normBuffer.position(0);
         indexBuffer.position(0);
     }
+
+    //그리기
     public void draw(float[] m) {
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         GLES20.glEnableVertexAttribArray(mPositionHandle);
@@ -170,7 +173,4 @@ public class Mesh {
         GLES20.glDisableVertexAttribArray(mTexCoordLoc);
         GLES20.glDisable(GLES20.GL_DEPTH_TEST);
     }
-
-
-
 }

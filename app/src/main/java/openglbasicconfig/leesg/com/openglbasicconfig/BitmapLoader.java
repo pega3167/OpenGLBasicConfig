@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
+import android.util.Log;
 
 
 /**
@@ -13,11 +14,15 @@ import android.opengl.GLUtils;
 public class BitmapLoader {
     private Bitmap bitmap;
     private int imageHandle;
+    private float wordLength;
     private final android.graphics.Matrix flip = new android.graphics.Matrix();
+    // 메인 객체
     Context mContext;
+    HangulBitmap mHangulBitmap;
 
-    public BitmapLoader (Context mainContext) {
+    public BitmapLoader (Context mainContext, HangulBitmap mainHangulBitmap) {
         mContext = mainContext;
+        mHangulBitmap = mainHangulBitmap;
         flip.postScale(1.0f, -1.0f);
     }
     public int getImageHandle(String target, boolean needFlip) {
@@ -28,6 +33,19 @@ public class BitmapLoader {
         imageHandle = getImageHandle(bitmap);
         return imageHandle;
     }
+
+    public int getHangulHandle(String text, int textSize, int fontColor, int canvasColor, float scale) {
+        bitmap = Bitmap.createBitmap((int) (textSize * text.length()), (int) (textSize), Bitmap.Config.ARGB_8888);
+        wordLength = mHangulBitmap.GetBitmap(bitmap, text, textSize, fontColor, canvasColor, scale);
+        imageHandle = getImageHandle(bitmap);
+        return imageHandle;
+    }
+
+    public float getWordLength() {
+        Log.e("", "" + wordLength);
+        return wordLength;
+    }
+
     private int getImageHandle(Bitmap bitmap){
         int[] texturenames = new int[1];
         GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);

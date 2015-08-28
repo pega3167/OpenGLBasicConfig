@@ -3,6 +3,7 @@ package openglbasicconfig.leesg.com.openglbasicconfig;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.GLUtils;
@@ -35,8 +36,10 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     Context mContext;
     ScreenConfig mScreenConfig;
     BitmapLoader mBitmapLoader;
+    HangulBitmap mHangulBitmap;
     Camera mCamera;
     //객체
+    Square mFontSample;
     Square mIntroScreen;
     Button mIntroButtons[];
     Square mStageScreen;
@@ -53,6 +56,8 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mDeviceWidth = width;
         mDeviceHeight = height;
         mScreenConfig = new ScreenConfig(width, height);
+        mHangulBitmap = new HangulBitmap(mActivity);
+        mBitmapLoader = new BitmapLoader(mContext, mHangulBitmap);
     }
     //멈춤
     public void onPause() {
@@ -86,6 +91,8 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         GLES20.glAttachShader(mProgramImage, fragmentShader);
         GLES20.glLinkProgram(mProgramImage);
         GLES20.glUseProgram(mProgramImage);
+        //initialize font
+        mFontSample = new Square(mProgramImage);
         //initialize screen
         mIntroScreen = new Square(mProgramImage);
         mStageScreen = new Square(mProgramImage);
@@ -115,7 +122,6 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         // orthoperspective x lookat
         Matrix.multiplyMM(mMtrxOrthoAndView, 0, mCamera.orthoProjectionMatrix, 0, mCamera.twoDViewMatrix, 0);
         //bit map loader initialize
-        mBitmapLoader = new BitmapLoader(mContext);
         //지구
         mSphere.setBitmap(mBitmapLoader.getImageHandle("drawable/earthmap", true), 1024, 512);
         //sample
@@ -144,6 +150,10 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             mStageButtons[i].setPos(mScreenConfig.getmVirtualHeight() / 6 + i * mScreenConfig.getmVirtualHeight() / 6, 4 * mScreenConfig.getmVirtualHeight() / 6);
             mStageButtons[i].setIsActive(true);
         }
+        //폰트
+        mFontSample.setBitmap(mBitmapLoader.getHangulHandle("하하하", 480, Color.BLUE, -1, 1.0f), (int)mBitmapLoader.getWordLength(), 480);
+        mFontSample.setPos(mScreenConfig.getmVirtualWidth() / 2, mScreenConfig.getmVirtualHeight() / 2);
+        mFontSample.setIsActive(true);
     }
     // 쉐이더
     private final String vertexShaderCode =
@@ -204,6 +214,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         for(int i = 0 ; i < ConstMgr.STAGEBUTTON_NUM ; i++) {
             mStageButtons[i].draw(orth);
         }
+        mFontSample.draw(orth);
     }
     //게임 화면
     private void RenderGame(float[] pv, float[] orth) {
@@ -226,6 +237,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         //최종 P * V * M 매트릭스
         Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
         sample.draw(mMVPMatrix);
+        mFontSample.draw(orth);
     }
 
     //터치 이벤트
