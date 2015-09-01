@@ -111,9 +111,9 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         sample = new Mesh(mProgramImage, mActivity);
         //initialize camera
         mCamera = new Camera();
-        mCamera.setEye(0f, 250f, 0f);
+        mCamera.setEye(250f, 0f, 0f);
         mCamera.setAt(0f, 0f, 0f);
-        mCamera.setUp(0f, 0f, -1f);
+        mCamera.setUp(0f, 1f, 0f);
         mCamera.setViewBox((float) Math.PI / 6.0f, (float) mDeviceWidth / (float) mDeviceHeight, 1.0f, 100000.0f);
         mCamera.setViewMatrix();
         mCamera.setTwoDViewMatrix();
@@ -226,18 +226,15 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         //model matrix 계산
         Matrix.setIdentityM(tempMatrix, 0);
         Matrix.setIdentityM(mModelMatrix, 0);
-        Matrix.scaleM(tempMatrix, 0, 0.001f, 0.001f, 0.001f);
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
-        Matrix.setIdentityM(tempMatrix, 0);
-        Matrix.rotateM(tempMatrix, 0, (float) (mLastTime / 10 % 360), 0f, 0.0f, 0.001f);
+        Matrix.scaleM(tempMatrix, 0, 50.0f, 50.0f, 50.0f);
         Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
         Matrix.setIdentityM(tempMatrix, 0);
         Matrix.rotateM(tempMatrix, 0, (float) (mLastTime / 10 % 360), 0f, 0.0001f, 0.0f);
         Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
         //최종 P * V * M 매트릭스
         Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
-        sample.draw(mMVPMatrix);
-        mFontSample.draw(orth);
+        mSphere.draw(mMVPMatrix);
+        //mFontSample.draw(orth);
     }
 
     //터치 이벤트

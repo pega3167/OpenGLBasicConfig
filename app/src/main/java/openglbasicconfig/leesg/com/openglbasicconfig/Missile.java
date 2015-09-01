@@ -5,6 +5,7 @@ package openglbasicconfig.leesg.com.openglbasicconfig;
  */
 public class Missile extends Mesh{
     private Vector3f currentPos;
+    private Vector3f velocity;
 
     //생성자
     public Missile(int mProgramImage, MainActivity mainActivity) {

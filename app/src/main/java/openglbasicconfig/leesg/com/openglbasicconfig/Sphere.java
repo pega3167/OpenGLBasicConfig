@@ -78,7 +78,7 @@ public class Sphere {
             //vertex buffer
             for (j = 0; j < numSlices + 1; j++) {
                 int vertex = (i * (numSlices + 1) + j) * 3;
-                thetaSlice = Math.PI / (double) numSlices * j;
+                thetaSlice = 2 * Math.PI / (double) numSlices * j;
                 sinThetaSlice = Math.sin(thetaSlice);
                 cosThetaSlice = Math.cos(thetaSlice);
 
@@ -125,7 +125,7 @@ public class Sphere {
         GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
         //이미지 핸들을 바인드 한다. 수정중
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,mHandleBitmap);
-        GLES20.glDrawElements(GLES20.GL_POINTS, indexCount, GLES20.GL_UNSIGNED_SHORT, mIndexBuffer);
+        GLES20.glDrawElements(GLES20.GL_TRIANGLES, indexCount, GLES20.GL_UNSIGNED_SHORT, mIndexBuffer);
         GLES20.glDisableVertexAttribArray(mPositionHandle);
         GLES20.glDisableVertexAttribArray(mTexCoordLoc);
         GLES20.glDisable(GLES20.GL_DEPTH_TEST);
