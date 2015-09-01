@@ -114,6 +114,7 @@ public class Sphere {
     //그리기
     public void draw(float[] m) {
         //Matrix.setIdentityM(m, 0);
+        GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         GLES20.glEnableVertexAttribArray(mPositionHandle);
         GLES20.glVertexAttribPointer(mPositionHandle, COORDS_PER_VERTEX, GLES20.GL_FLOAT, false, 0, mVertexBuffer);
         GLES20.glEnableVertexAttribArray(mTexCoordLoc);
@@ -127,5 +128,6 @@ public class Sphere {
         GLES20.glDrawElements(GLES20.GL_POINTS, indexCount, GLES20.GL_UNSIGNED_SHORT, mIndexBuffer);
         GLES20.glDisableVertexAttribArray(mPositionHandle);
         GLES20.glDisableVertexAttribArray(mTexCoordLoc);
+        GLES20.glDisable(GLES20.GL_DEPTH_TEST);
     }
 }
