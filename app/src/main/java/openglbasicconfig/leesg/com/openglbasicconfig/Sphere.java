@@ -46,7 +46,7 @@ public class Sphere {
         mBitmapCount = 1;
         this.mWidth = width;
         this.mHeight = height;
-        setupBuffer(0.01f, 36, 36);
+        setupBuffer(1.0f, 36, 36);
         mHandleBitmap = handle;
     }
     // 버퍼 설정. 구의 vertexCoord, normalCoord, texCoord, indexOrder 를 계산하여 버퍼에 저장
@@ -114,6 +114,7 @@ public class Sphere {
     //그리기
     public void draw(float[] m) {
         //Matrix.setIdentityM(m, 0);
+        //GLES20.glLineWidth(10);
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         GLES20.glEnableVertexAttribArray(mPositionHandle);
         GLES20.glVertexAttribPointer(mPositionHandle, COORDS_PER_VERTEX, GLES20.GL_FLOAT, false, 0, mVertexBuffer);

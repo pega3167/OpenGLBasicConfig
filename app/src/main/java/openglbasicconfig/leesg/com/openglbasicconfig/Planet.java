@@ -53,6 +53,11 @@ public class Planet extends Sphere {
         this.currentPos.y = Pos.y;
         this.currentPos.z = Pos.z;
     }
+    public void setCurrentPos(float x, float y, float z) {
+        this.currentPos.x = x;
+        this.currentPos.y = y;
+        this.currentPos.z = z;
+    }
     //값 반환 함수
     public float getOrbitRadius() { return this.orbitRadius; }
     public float getRadius() { return this.radius; }

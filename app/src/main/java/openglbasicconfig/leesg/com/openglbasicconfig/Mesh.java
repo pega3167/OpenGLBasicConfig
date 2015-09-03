@@ -10,6 +10,7 @@ import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 
 /**
  * Created by LeeSG on 2015-08-24.
@@ -44,14 +45,14 @@ public class Mesh {
 
     public void loadOBJ(String filename) {
         //obj파일의 정보를 openGL redner에 맞게 변환하여 저장할 저장소
-        List<Float> vertices = new ArrayList();
-        List<Float> normals = new ArrayList();
-        List<Float> textures = new ArrayList();
-        List<Short> indices = new ArrayList();
+        Vector<Float> vertices = new Vector<Float>();
+        Vector<Float> normals = new Vector<Float>();
+        Vector<Float> textures = new Vector<Float>();
+        Vector<Short> indices = new Vector<Short>();
         // obj파일의 정보를 일시적으로 변환하기 전 상태로 저장할 저장소
-        List<Float> temp_vertices = new ArrayList();
-        List<Float> temp_normals = new ArrayList();
-        List<Float> temp_textures = new ArrayList();
+        Vector<Float> temp_vertices = new Vector<Float>();
+        Vector<Float> temp_normals = new Vector<Float>();
+        Vector<Float> temp_textures = new Vector<Float>();;
         //obj파일 읽기
         BufferedReader reader = mActivity.getAssetFile(filename + ".obj");
         String line;

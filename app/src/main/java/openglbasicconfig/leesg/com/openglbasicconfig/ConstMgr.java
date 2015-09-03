@@ -13,4 +13,6 @@ public class ConstMgr {
     public final static int STAGEBUTTON_NUM = 5;
     //현재 화면의 모드
     public static int SCREEN_MODE = SCREEN_INTRO;
+    // Frame Per Second
+    public final static int FPS = 64;
 }

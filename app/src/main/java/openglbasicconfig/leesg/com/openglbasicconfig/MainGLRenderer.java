@@ -11,6 +11,8 @@ import android.opengl.Matrix;
 import android.util.Log;
 import android.view.MotionEvent;
 
+import java.util.Vector;
+
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
@@ -45,9 +47,16 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     Square mStageScreen;
     Button mStageButtons[];
     Button mBackButton;
+    Aim mAim;
     //3D 오브젝트
-    Sphere mSphere;
+    Planet testPlanet[];
     Mesh sample;
+    Mesh mMissile;
+    // frame
+    int frame = 0;
+    long startTime = 0;
+    //missile List
+    Vector<Missile> testMissile = new Vector<Missile> ();
     //생성자
     public MainGLRenderer(MainActivity activity, int width, int height) {
         mActivity = activity;
@@ -107,14 +116,23 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             mStageButtons[i] = new Button(mProgramImage, mProgramSolidColor, this);
         }
         //initialize mesh
-        mSphere = new Sphere(mProgramImage);
+        mMissile = new Mesh(mProgramImage, mActivity);
+        mMissile.loadOBJ("missile");
+        mMissile.setBitmap(mBitmapLoader.getImageHandle("drawable/missilesample",true));
+        testPlanet = new Planet[4];
+        Vector3f temp = new Vector3f();
+        temp.setXYZ(0f,0f,0f);
+        testPlanet[0] = new Planet(mProgramImage, 0.0f, 0.5f, 0.0f, 0.0f, 1, 1, 0.0001f, 1.0f, temp);
+        testPlanet[1] = new Planet(mProgramImage, 1.0f, 0.1f, 0.2f, 0.1f, 1, 1, 0.0001f, 1.0f, temp);
+        testPlanet[2] = new Planet(mProgramImage, 2.0f, 0.1f, 0.1f, 1.3f, 1, 1, 0.0001f, 1.0f, temp);
+        testPlanet[3] = new Planet(mProgramImage, 3.0f, 0.1f, 0.03f, 0.6f, 1, 1, 0.0001f, 1.0f, temp);
         sample = new Mesh(mProgramImage, mActivity);
         //initialize camera
         mCamera = new Camera();
-        mCamera.setEye(250f, 0f, 0f);
+        mCamera.setEye(0f, 250f, 0f);
         mCamera.setAt(0f, 0f, 0f);
-        mCamera.setUp(0f, 1f, 0f);
-        mCamera.setViewBox((float) Math.PI / 6.0f, (float) mDeviceWidth / (float) mDeviceHeight, 1.0f, 100000.0f);
+        mCamera.setUp(0f, 0f, 1f);
+        mCamera.setViewBox((float) Math.PI / 3.0f, (float) mDeviceWidth / (float) mDeviceHeight, 1.0f, 100000.0f);
         mCamera.setViewMatrix();
         mCamera.setTwoDViewMatrix();
         mCamera.setProjectionMatrix();
@@ -123,7 +141,9 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         Matrix.multiplyMM(mMtrxOrthoAndView, 0, mCamera.orthoProjectionMatrix, 0, mCamera.twoDViewMatrix, 0);
         //bit map loader initialize
         //지구
-        mSphere.setBitmap(mBitmapLoader.getImageHandle("drawable/earthmap", true), 1024, 512);
+        for(int i = 0 ; i < 4 ; i ++) {
+            testPlanet[i].setBitmap(mBitmapLoader.getImageHandle("drawable/earthmap", true), 1024, 512);
+        }
         //sample
         sample.setBitmap(mBitmapLoader.getImageHandle("drawable/missilesample", true));
         sample.loadOBJ("missile");
@@ -151,9 +171,14 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             mStageButtons[i].setIsActive(true);
         }
         //폰트
-        mFontSample.setBitmap(mBitmapLoader.getHangulHandle("하하하", 480, Color.BLUE, -1, 1.0f), (int)mBitmapLoader.getWordLength(), 480);
+        mFontSample.setBitmap(mBitmapLoader.getHangulHandle("하하하", 480, Color.BLUE, -1, 1.0f), (int) mBitmapLoader.getWordLength(), 480);
         mFontSample.setPos(mScreenConfig.getmVirtualWidth() / 2, mScreenConfig.getmVirtualHeight() / 2);
         mFontSample.setIsActive(true);
+        //궤도
+        mAim = new Aim(mProgramImage);
+        mAim.setShootPos(-3.0f, 0.0f, 0.0f); mAim.setShootVelocity(0.01f, 0.0f, 0.0f);
+        mAim.setBitmap(mBitmapLoader.getImageHandle("drawable/white", true));
+        mAim.setupVertexBuffer(testPlanet, 4);
     }
     // 쉐이더
     private final String vertexShaderCode =
@@ -186,12 +211,24 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         if (mLastTime > now)
             return;
         long elapsed = now - mLastTime;
+        int tempFrame = frame;
+        frame = (int)((mLastTime - startTime) * ConstMgr.FPS / 1000);
         if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_INTRO)
             RenderIntro(mMtrxProjectionAndView, mMtrxOrthoAndView);
         else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_STAGE)
             RenderStage(mMtrxProjectionAndView, mMtrxOrthoAndView);
-        else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_GAME)
+        else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_GAME) {
+            if (frame != tempFrame) {
+                for ( int i = 0; i < testMissile.size(); i++) {
+                    testMissile.elementAt(i).updateCurrentPos();
+                    testMissile.elementAt(i).updateVelocity(testPlanet, 4);
+                    testMissile.elementAt(i).updateAngle();
+                }
+                mAim.setShootPos(-3.0f, 0.0f, 0.0f); mAim.setShootVelocity(0.01f, 0.0f, 0.0f);
+                mAim.setupVertexBuffer(testPlanet,4);
+            }
             RenderGame(mMtrxProjectionAndView, mMtrxOrthoAndView);
+        }
         mLastTime = now;
     }
     //초기화면
@@ -223,17 +260,47 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         mBackButton.draw(orth);
         float[] tempMatrix = new float[16];
+        Vector3f temp = new Vector3f();
+        //행성
         //model matrix 계산
-        Matrix.setIdentityM(tempMatrix, 0);
-        Matrix.setIdentityM(mModelMatrix, 0);
-        Matrix.scaleM(tempMatrix, 0, 50.0f, 50.0f, 50.0f);
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
-        Matrix.setIdentityM(tempMatrix, 0);
-        Matrix.rotateM(tempMatrix, 0, (float) (mLastTime / 10 % 360), 0f, 0.0001f, 0.0f);
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
-        //최종 P * V * M 매트릭스
-        Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
-        mSphere.draw(mMVPMatrix);
+        for( int i = 0 ; i < 4 ; i++ ) {
+            Matrix.setIdentityM(tempMatrix, 0);
+            Matrix.setIdentityM(mModelMatrix, 0);
+            Matrix.scaleM(tempMatrix, 0, testPlanet[i].getRadius(), testPlanet[i].getRadius(), testPlanet[i].getRadius());
+            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+            Matrix.setIdentityM(tempMatrix, 0);
+            Matrix.rotateM(tempMatrix, 0, frame * testPlanet[i].getRotationSpeed(), 0.0f, 1.0f, 0.0f);
+            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+            Matrix.setIdentityM(tempMatrix, 0);
+            Matrix.translateM(tempMatrix, 0, testPlanet[i].getOrbitRadius(), 0.0f, 0.0f);
+            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+            Matrix.setIdentityM(tempMatrix, 0);
+            Matrix.rotateM(tempMatrix, 0, frame * testPlanet[i].getRevolutionSpeed(), 0.0f, 1.0f, 0.0f);
+            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+            //현재 행성 위치 업데이트
+            temp.multM(mModelMatrix, 1.0f);
+            testPlanet[i].setCurrentPos(temp);
+            //최종 P * V * M 매트릭스
+            Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
+            testPlanet[i].draw(mMVPMatrix);
+            mAim.draw(pv);
+        }
+        //미사일
+        for( int i = 0 ; i < testMissile.size() ; i++ ) {
+            Matrix.setIdentityM(tempMatrix, 0);
+            Matrix.setIdentityM(mModelMatrix, 0);
+            Matrix.scaleM(tempMatrix, 0, 0.0001f, 0.0001f, 0.0001f);
+            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+            Matrix.setIdentityM(tempMatrix, 0);
+            Matrix.rotateM(tempMatrix, 0, testMissile.elementAt(i).getAngle() - 90, 0.0f, 1.0f, 0.0f);
+            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+            Matrix.setIdentityM(tempMatrix, 0);
+            Matrix.translateM(tempMatrix, 0, testMissile.elementAt(i).getCurrentPos().x, testMissile.elementAt(i).getCurrentPos().y, testMissile.elementAt(i).getCurrentPos().z);
+            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+            //최종 P * V * M 매트릭스
+            Matrix.multiplyMM(mMVPMatrix , 0 , pv, 0 , mModelMatrix, 0);
+            mMissile.draw(mMVPMatrix);
+        }
         //mFontSample.draw(orth);
     }
 
@@ -262,6 +329,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                     for (int i = 0; i < ConstMgr.STAGEBUTTON_NUM; i++) {
                         if(mStageButtons[i].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
                             ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_GAME;
+                            startTime = mLastTime;
                         }
                     }
                     if(mBackButton.isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
@@ -273,7 +341,11 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             switch (action & MotionEvent.ACTION_MASK) {
                 case MotionEvent.ACTION_DOWN: {
                     if(mBackButton.isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
-                        ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_STAGE;
+                        //ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_STAGE;
+                        Missile temp = new Missile();
+                        testMissile.add(temp);
+                        testMissile.elementAt(testMissile.size() - 1).setCurrentPos(-3.0f, 0.0f, 0.0f);
+                        testMissile.elementAt(testMissile.size() - 1).setVelocity(0.01f, 0.0f, 0.0f);
                     }
                 }
             }

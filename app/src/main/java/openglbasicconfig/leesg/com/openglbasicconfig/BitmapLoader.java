@@ -5,7 +5,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
-import android.util.Log;
 
 
 /**
@@ -42,7 +41,6 @@ public class BitmapLoader {
     }
 
     public float getWordLength() {
-        Log.e("", "" + wordLength);
         return wordLength;
     }
 
