@@ -53,10 +53,10 @@ public class Square {
 
     public Square(int programImage) {
         mProgramImage = programImage;
-        mPositionHandle = GLES20.glGetAttribLocation(mProgramImage, "vPosition");
-        mTexCoordLoc = GLES20.glGetAttribLocation(mProgramImage, "a_texCoord");
+        mPositionHandle = GLES20.glGetAttribLocation(mProgramImage, "position");
+        mTexCoordLoc = GLES20.glGetAttribLocation(mProgramImage, "texcoord");
         mtrxhandle = GLES20.glGetUniformLocation(mProgramImage, "uMVPMatrix");
-        mSamplerLoc = GLES20.glGetUniformLocation(mProgramImage, "s_texture");
+        mSamplerLoc = GLES20.glGetUniformLocation(mProgramImage, "TEX");
     }
     // 이미지 핸들, 가로, 세로 값을 받아와 설정
     public void setBitmap(int handle, int width, int height) {

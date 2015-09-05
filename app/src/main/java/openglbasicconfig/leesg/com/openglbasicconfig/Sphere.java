@@ -17,6 +17,7 @@ public class Sphere {
     // 기본적인 이미지 처리를 위한 변수
     private static int mProgramImage;
     private int mPositionHandle;
+    private int mNormalLoc;
     private int mTexCoordLoc;
     private int mtrxhandle;
     private int mSamplerLoc;
@@ -36,10 +37,11 @@ public class Sphere {
 
     public Sphere(int programImage) {
         mProgramImage = programImage;
-        mPositionHandle = GLES20.glGetAttribLocation(mProgramImage, "vPosition");
-        mTexCoordLoc = GLES20.glGetAttribLocation(mProgramImage, "a_texCoord");
+        mPositionHandle = GLES20.glGetAttribLocation(mProgramImage, "position");
+        mNormalLoc = GLES20.glGetAttribLocation(mProgramImage, "normal");
+        mTexCoordLoc = GLES20.glGetAttribLocation(mProgramImage, "texcoord");
         mtrxhandle = GLES20.glGetUniformLocation(mProgramImage, "uMVPMatrix");
-        mSamplerLoc = GLES20.glGetUniformLocation(mProgramImage, "s_texture");
+        mSamplerLoc = GLES20.glGetUniformLocation(mProgramImage, "TEX");
     }
     // 이미지 핸들, 가로, 세로 값을 받아와 설정
     public void setBitmap(int handle, int width, int height) {
@@ -118,9 +120,11 @@ public class Sphere {
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         GLES20.glEnableVertexAttribArray(mPositionHandle);
         GLES20.glVertexAttribPointer(mPositionHandle, COORDS_PER_VERTEX, GLES20.GL_FLOAT, false, 0, mVertexBuffer);
+        GLES20.glEnableVertexAttribArray(mNormalLoc);
+        GLES20.glVertexAttribPointer(mNormalLoc, 3, GLES20.GL_FLOAT, false, 0, mNormalBuffer);
         GLES20.glEnableVertexAttribArray(mTexCoordLoc);
         GLES20.glVertexAttribPointer(mTexCoordLoc, 2, GLES20.GL_FLOAT, false, 0, mTexCoordBuffer);
-        GLES20.glUniformMatrix4fv(mtrxhandle, 1, false,m,0);
+        GLES20.glUniformMatrix4fv(mtrxhandle, 1, false, m, 0);
         // 투명한 배경을 처리한다.
         GLES20.glEnable(GLES20.GL_BLEND);
         GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);

@@ -18,6 +18,7 @@ import java.util.Vector;
 public class Mesh {
     private static int mProgramImage;
     private int mPositionHandle;
+    private int mNormalLoc;
     private int mTexCoordLoc;
     private int mtrxhandle;
     private int mSamplerLoc;
@@ -32,10 +33,11 @@ public class Mesh {
     public Mesh (int programImage, MainActivity mainActivity) {
         mProgramImage = programImage;
         mActivity = mainActivity;
-        mPositionHandle = GLES20.glGetAttribLocation(mProgramImage, "vPosition");
-        mTexCoordLoc = GLES20.glGetAttribLocation(mProgramImage, "a_texCoord");
+        mPositionHandle = GLES20.glGetAttribLocation(mProgramImage, "position");
+        mNormalLoc = GLES20.glGetAttribLocation(mProgramImage, "normal");
+        mTexCoordLoc = GLES20.glGetAttribLocation(mProgramImage, "texcoord");
         mtrxhandle = GLES20.glGetUniformLocation(mProgramImage, "uMVPMatrix");
-        mSamplerLoc = GLES20.glGetUniformLocation(mProgramImage, "s_texture");
+        mSamplerLoc = GLES20.glGetUniformLocation(mProgramImage, "TEX");
     }
 
     public void setBitmap(int handle) {
@@ -160,6 +162,8 @@ public class Mesh {
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         GLES20.glEnableVertexAttribArray(mPositionHandle);
         GLES20.glVertexAttribPointer(mPositionHandle, 3, GLES20.GL_FLOAT, false, 0, vertexBuffer);
+        GLES20.glEnableVertexAttribArray(mNormalLoc);
+        GLES20.glVertexAttribPointer(mNormalLoc, 3, GLES20.GL_FLOAT, false, 0, normBuffer);
         GLES20.glEnableVertexAttribArray(mTexCoordLoc);
         GLES20.glVertexAttribPointer(mTexCoordLoc, 2, GLES20.GL_FLOAT, false, 0, texBuffer);
         GLES20.glUniformMatrix4fv(mtrxhandle, 1, false, m, 0);
@@ -171,6 +175,7 @@ public class Mesh {
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mHandleBitmap);
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, indexCount, GLES20.GL_UNSIGNED_SHORT, indexBuffer);
         GLES20.glDisableVertexAttribArray(mPositionHandle);
+        GLES20.glDisableVertexAttribArray(mNormalLoc);
         GLES20.glDisableVertexAttribArray(mTexCoordLoc);
         GLES20.glDisable(GLES20.GL_DEPTH_TEST);
     }

@@ -24,6 +24,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     private final float[] mMtrxProjectionAndView = new float[16]; // proj x view
     private final float[] mMtrxOrthoAndView = new float[16];
     private final float[] mModelMatrix = new float[16];
+    private final float[] mModelViewMatrix = new float[16];
     private final float[] mMVPMatrix = new float[16]; //proj x view x model
     //프로그램
     private static int mProgramImage;
@@ -40,6 +41,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     BitmapLoader mBitmapLoader;
     HangulBitmap mHangulBitmap;
     Camera mCamera;
+    Light mLight;
     //객체
     Square mFontSample;
     Square mIntroScreen;
@@ -93,12 +95,10 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     public void onSurfaceCreated(GL10 gl, EGLConfig config){
         mScreenConfig = new ScreenConfig(mDeviceWidth, mDeviceHeight);
         mScreenConfig.setSize(1280, 720);
-        int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode);
-        int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode);
-        mProgramImage = GLES20.glCreateProgram();
-        GLES20.glAttachShader(mProgramImage, vertexShader);
-        GLES20.glAttachShader(mProgramImage, fragmentShader);
-        GLES20.glLinkProgram(mProgramImage);
+        mProgramImage = ESShader.loadProgramFromAsset(mContext,"shaders/shader.vert","shaders/shader.frag");
+        if(mProgramImage == 0) {
+            Log.e("","Failed loading shaders");
+        }
         GLES20.glUseProgram(mProgramImage);
         //initialize font
         mFontSample = new Square(mProgramImage);
@@ -139,6 +139,19 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mCamera.setOrthoProjectionMatrix(mScreenConfig.mVirtualWidth, mScreenConfig.mVirtualHeight);
         // orthoperspective x lookat
         Matrix.multiplyMM(mMtrxOrthoAndView, 0, mCamera.orthoProjectionMatrix, 0, mCamera.twoDViewMatrix, 0);
+        //initialize light
+        mLight = new Light(mProgramImage);
+        mLight.setPosition(0.0f, 0.0f, 0.0f, 1.0f);
+        mLight.setAmbient(0.5f, 0.5f, 0.5f, 1.0f);
+        mLight.setDiffuse(0.7f, 0.7f, 0.7f, 1.0f);
+        mLight.setSpecular(0.8f, 0.8f, 0.8f, 1.0f);
+        //initialize material
+        mLight.setMAmbient(0.6f, 0.6f, 0.6f, 1.0f);
+        mLight.setMDiffuse(0.7f, 0.7f, 0.7f, 1.0f);
+        mLight.setMSpecular(0.8f, 0.8f, 0.8f, 1.0f);
+        mLight.setShininess(10);
+        mLight.sendLight();
+        mLight.sendMaterial();
         //bit map loader initialize
         //지구
         for(int i = 0 ; i < 4 ; i ++) {
@@ -180,29 +193,19 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mAim.setBitmap(mBitmapLoader.getImageHandle("drawable/white", true));
         mAim.setupVertexBuffer(testPlanet, 4);
     }
-    // 쉐이더
-    private final String vertexShaderCode =
-            "uniform mat4 uMVPMatrix;" +
-                    "attribute vec4 vPosition;" +
-                    "attribute vec2 a_texCoord;" +
-                    "varying vec2 v_texCoord;" +
-                    "void main() {" +
-                    "gl_Position = uMVPMatrix * vPosition;" +
-                    " v_texCoord = a_texCoord;" +
-                    "}";
-    private final String fragmentShaderCode =
-            "precision mediump float;" +
-                    "varying vec2 v_texCoord;" +
-                    "uniform sampler2D s_texture;" +
-                    "void main() {" +
-                    " gl_FragColor = texture2D( s_texture, v_texCoord);" +
-                    "}";
 
-    public static int loadShader(int type, String shaderCode) {
-        int shader = GLES20.glCreateShader(type);
-        GLES20.glShaderSource(shader, shaderCode);
-        GLES20.glCompileShader(shader);
-        return shader;
+    public void update() {
+        for ( int i = 0; i < testMissile.size(); i++) {
+            testMissile.elementAt(i).updateCurrentPos();
+            testMissile.elementAt(i).updateVelocity(testPlanet, 4);
+            testMissile.elementAt(i).updateAngle();
+        }
+        mAim.setShootPos(-3.0f, 0.0f, 0.0f); mAim.setShootVelocity(0.01f, 0.0f, 0.0f);
+        mAim.setupVertexBuffer(testPlanet, 4);
+        // send light & material properties
+        mLight.sendLight();
+        mLight.sendMaterial();
+        GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(mProgramImage, "viewMatrix"), 1, false, mCamera.viewMatrix, 0);
     }
 
     @Override
@@ -219,13 +222,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             RenderStage(mMtrxProjectionAndView, mMtrxOrthoAndView);
         else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_GAME) {
             if (frame != tempFrame) {
-                for ( int i = 0; i < testMissile.size(); i++) {
-                    testMissile.elementAt(i).updateCurrentPos();
-                    testMissile.elementAt(i).updateVelocity(testPlanet, 4);
-                    testMissile.elementAt(i).updateAngle();
-                }
-                mAim.setShootPos(-3.0f, 0.0f, 0.0f); mAim.setShootVelocity(0.01f, 0.0f, 0.0f);
-                mAim.setupVertexBuffer(testPlanet,4);
+                update();
             }
             RenderGame(mMtrxProjectionAndView, mMtrxOrthoAndView);
         }
@@ -236,6 +233,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
         mIntroScreen.draw(orth);
         for(int i = 0 ; i < ConstMgr.INTROBUTTON_NUM ; i++) {
             mIntroButtons[i].draw(orth);
@@ -246,6 +244,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
         mStageScreen.draw(orth);
         mBackButton.draw(orth);
         for(int i = 0 ; i < ConstMgr.STAGEBUTTON_NUM ; i++) {
@@ -258,12 +257,20 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+        // Render UI
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
         mBackButton.draw(orth);
+
+        // Render 3D
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 0);
         float[] tempMatrix = new float[16];
         Vector3f temp = new Vector3f();
         //행성
         //model matrix 계산
         for( int i = 0 ; i < 4 ; i++ ) {
+            if(i==0) GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
+            else GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 0);
             Matrix.setIdentityM(tempMatrix, 0);
             Matrix.setIdentityM(mModelMatrix, 0);
             Matrix.scaleM(tempMatrix, 0, testPlanet[i].getRadius(), testPlanet[i].getRadius(), testPlanet[i].getRadius());
@@ -281,10 +288,14 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             temp.multM(mModelMatrix, 1.0f);
             testPlanet[i].setCurrentPos(temp);
             //최종 P * V * M 매트릭스
+            Matrix.multiplyMM(mModelViewMatrix, 0, mCamera.viewMatrix, 0, mModelMatrix, 0);
             Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
+            GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(mProgramImage, "modelViewMatrix"), 1, false, mModelViewMatrix, 0);
             testPlanet[i].draw(mMVPMatrix);
-            mAim.draw(pv);
         }
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
+        mAim.draw(pv);
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 0);
         //미사일
         for( int i = 0 ; i < testMissile.size() ; i++ ) {
             Matrix.setIdentityM(tempMatrix, 0);
@@ -299,12 +310,22 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
             //최종 P * V * M 매트릭스
             Matrix.multiplyMM(mMVPMatrix , 0 , pv, 0 , mModelMatrix, 0);
+            Matrix.multiplyMM(mModelViewMatrix, 0, mCamera.viewMatrix, 0, mModelMatrix, 0);
+            GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(mProgramImage, "modelViewMatrix"), 1, false, mModelViewMatrix, 0);
             mMissile.draw(mMVPMatrix);
         }
         //mFontSample.draw(orth);
     }
 
     //터치 이벤트
+    float x1= 1.f;
+    float x2= 1.f;
+    float y1= 1.f;
+    float y2= 1.f;
+    float px=1.f;
+    float py=1.f;
+    float distance = 1.f;
+
     private int mPointerId;
     public boolean onTouchEvent(MotionEvent event) {
         final int x = (int) event.getX();
@@ -338,8 +359,8 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                 }
             }
         } else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_GAME) {
-            switch (action & MotionEvent.ACTION_MASK) {
-                case MotionEvent.ACTION_DOWN: {
+            switch (action) {
+                case MotionEvent.ACTION_DOWN:
                     if(mBackButton.isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
                         //ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_STAGE;
                         Missile temp = new Missile();
@@ -347,7 +368,66 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                         testMissile.elementAt(testMissile.size() - 1).setCurrentPos(-3.0f, 0.0f, 0.0f);
                         testMissile.elementAt(testMissile.size() - 1).setVelocity(0.01f, 0.0f, 0.0f);
                     }
-                }
+                    x1 = event.getX(0);
+                    y1 = event.getY(0);
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    if (event.getPointerCount() > 1){//멀티터치상태로 움직일때
+                        px = (x1+x2)/2;
+                        py = (y1+y2)/2;
+                        x1 = event.getX(0);
+                        y1 = event.getY(0);
+                        x2 = event.getX(1);
+                        y2 = event.getY(1);
+                        float tempdistance = (float)Math.sqrt((double)((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2)));
+                        if(Math.abs(tempdistance - distance)>50) {
+                            //if(!bzoom&&!bmove) bzoom = true;
+                            mCamera.setZoom((distance - tempdistance) / 5000.0f);
+                            Matrix.multiplyMM(mMtrxProjectionAndView, 0, mCamera.projectionMatrix, 0, mCamera.viewMatrix, 0);
+                        }
+                        else{
+                            //if(!bzoom&&!bmove) bmove = true;
+                        }
+                        if(Math.sqrt((px - ((x1 + x2) / 2)) * (px - ((x1 + x2) / 2)) + (py - ((y1+y2)/2))*(py-((y1+y2)/2)))>5){
+                            mCamera.setMove((-py + (y1 + y2) / 2) / 200.0f,(-px + (x1 + x2) / 2) / 200.0f);
+                            Matrix.multiplyMM(mMtrxProjectionAndView, 0, mCamera.projectionMatrix, 0, mCamera.viewMatrix, 0);
+                        }
+                        /*
+                        if(bzoom) {
+                            mCamera.setZoom((distance - tempdistance) / 5000.0f);
+                            Matrix.multiplyMM(mMtrxProjectionAndView, 0, mCamera.projectionMatrix, 0, mCamera.viewMatrix, 0);
+                        }
+                        if(bmove){
+                            mCamera.setMove((-py + (y1 + y2) / 2) / 200.0f,(-px + (x1 + x2) / 2) / 200.0f);
+                            //mCamera.setRotateX((tempdistance - distance)/100);
+                            //mCamera.setRotateY((tempdistance - distance)/100);
+                            Matrix.multiplyMM(mMtrxProjectionAndView, 0, mCamera.projectionMatrix, 0, mCamera.viewMatrix, 0);
+                        }
+                        */
+                    }else{ // 싱글터치
+
+                        px = x1;
+                        py = y1;
+                        x1 = event.getX(0);
+                        y1 = event.getY(0);
+                        if(Math.abs(px - x1)>2) {
+                            mCamera.setRotateY((px - x1) / 2.0f);
+                            Matrix.multiplyMM(mMtrxProjectionAndView, 0, mCamera.projectionMatrix, 0, mCamera.viewMatrix, 0);
+                        }
+                        if(Math.abs(py - y1)>2) {
+                            mCamera.setRotateX((y1 - py) / 2.0f);
+                            Matrix.multiplyMM(mMtrxProjectionAndView, 0, mCamera.projectionMatrix, 0, mCamera.viewMatrix, 0);
+                        }
+                    }
+                    break;
+                case MotionEvent.ACTION_POINTER_UP:
+                    break;
+                case MotionEvent.ACTION_POINTER_DOWN:
+                    x1 = event.getX(0);
+                    y1 = event.getY(0);
+                    x2 = event.getX(1);
+                    y2 = event.getY(1);
+                    distance = (float)Math.sqrt((double)((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2)));
             }
         }
         return true;

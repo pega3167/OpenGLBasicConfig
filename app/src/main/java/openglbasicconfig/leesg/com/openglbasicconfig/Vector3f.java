@@ -55,4 +55,9 @@ public class Vector3f {
         this.z = Z;
         return this;
     }
+    public Vector3f Cross(Vector3f v) {
+        Vector3f temp = new Vector3f();
+        temp.setXYZ(y*v.z - z*v.y,z*v.x - x*v.z,x*v.y - y*v.x);
+        return temp;
+    }
 }
