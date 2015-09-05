@@ -15,4 +15,11 @@ public class ConstMgr {
     public static int SCREEN_MODE = SCREEN_INTRO;
     // Frame Per Second
     public final static int FPS = 64;
+    // 한 턴의 프레임 수
+    public final static int FRAME_PER_TURN = 640;
+    //현재 stage
+    public static int STAGE = 0;
+    // Aim vertex 최대값
+    public final static int MAX_AIM_VERTEXCOUNT = 1000;
+
 }

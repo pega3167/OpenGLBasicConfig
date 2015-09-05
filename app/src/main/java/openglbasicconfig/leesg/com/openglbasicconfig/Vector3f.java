@@ -60,4 +60,8 @@ public class Vector3f {
         temp.setXYZ(y*v.z - z*v.y,z*v.x - x*v.z,x*v.y - y*v.x);
         return temp;
     }
+
+    public float dot(Vector3f v){
+        return x*v.x + y*v.y + z*v.z;
+    }
 }

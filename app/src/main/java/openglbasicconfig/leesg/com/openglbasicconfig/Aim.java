@@ -38,7 +38,7 @@ public class Aim {
         mSamplerLoc = GLES20.glGetUniformLocation(mProgramImage, "TEX");
         shootPos = new Vector3f();
         shootVelocity = new Vector3f();
-        vertexCount = 1000;
+        vertexCount = ConstMgr.MAX_AIM_VERTEXCOUNT;
         ByteBuffer mVertices = ByteBuffer.allocateDirect(vertexCount * 3 * 4);
         mVertices.order(ByteOrder.nativeOrder());
         vertexBuffer = mVertices.asFloatBuffer();
@@ -71,26 +71,34 @@ public class Aim {
     public void setupVertexBuffer(Planet[] planetList, int listSize) {
         vertexBuffer.clear();
         Vector3f currentPos = new Vector3f(shootPos.x, shootPos.y, shootPos.z);
-        for( int i = 0 ; i < vertexCount ; i++ ) {
+        for( int i = 0 ; i < ConstMgr.MAX_AIM_VERTEXCOUNT ; i++ ) {
             currentPos.x += shootVelocity.x;
             currentPos.y += shootVelocity.y;
             currentPos.z += shootVelocity.z;
             //Log.e("","" + currentPos.x + ", "+ currentPos.y + ", "+ currentPos.z);
             vertexBuffer.put(3*i, currentPos.x);
             vertexBuffer.put(3*i+1, currentPos.y);
-            vertexBuffer.put(3*i+2, currentPos.z);
-            updateVelocity(planetList, listSize, currentPos);
+            vertexBuffer.put(3 * i + 2, currentPos.z);
+            if(updateVelocity(planetList, listSize, currentPos, i)) {
+                vertexCount = i+1;
+                vertexBuffer.position(0);
+                return;
+            }
         }
+        vertexCount = ConstMgr.MAX_AIM_VERTEXCOUNT;
         vertexBuffer.position(0);
     }
 
-    private void updateVelocity(Planet[] planetList, int listSize, Vector3f currentPos) {
+    private boolean updateVelocity(Planet[] planetList, int listSize, Vector3f currentPos, int loop) {
         float r;
         float a;
         Vector3f direction = new Vector3f();
         for(int i = 0 ; i < listSize ; i++) {
             r = currentPos.distance( planetList[i].getCurrentPos() );
-            if( r < planetList[i].getGravityField() ) {
+            if(r < planetList[i].getRadius()) {
+                return true;
+            }
+            else if( r < planetList[i].getGravityField() ) {
                 a = planetList[i].getGravity() / r*r;
                 direction.x = (planetList[i].getCurrentPos().x - currentPos.x) / r * a;
                 direction.y = (planetList[i].getCurrentPos().y - currentPos.y) / r * a;
@@ -100,6 +108,7 @@ public class Aim {
                 shootVelocity.z += direction.z;
             }
         }
+        return false;
     }
 
     public void setShootVelocity(Vector3f shootVelocity) {

@@ -68,4 +68,52 @@ public class Planet extends Sphere {
     public float getGravity() { return this.gravity; }
     public float getGravityField() { return this.gravityField; }
     public Vector3f getCurrentPos() { return this.currentPos; }
+
+    class Cannon{
+        private Vector3f currentPos; //cannon 위치
+        private int attackPoint; //공력력 or 실드 체력
+        private float speed; //미사일 속도 or 실드 반지름
+        private int type; //cannon or 실드 type
+
+        public Cannon(){
+            currentPos =  new Vector3f(0.0f, 0.0f, 0.0f);
+            attackPoint = 0;
+            speed = 0.0f;
+            type = 0;
+        }
+
+        public Cannon(Vector3f Pos,int power, float sp, int t){
+            currentPos =  new Vector3f(Pos.x,Pos.y, Pos.z);
+            attackPoint = power;
+            speed = sp;
+            type = t;
+        }
+
+        public void setCurrentPos(Vector3f Pos){
+            currentPos.x = Pos.x;
+            currentPos.y = Pos.y;
+            currentPos.z = Pos.z;
+        }
+        public void setAttackPoint(int power){
+            attackPoint = power;
+        }
+        public void setSpeed(float sp){
+            speed = sp;
+        }
+        public void setType(int t){
+            type = t;
+        }
+        public Vector3f getCurrentPos(){
+            return currentPos;
+        }
+        public int getAttackPoint(){
+            return attackPoint;
+        }
+        public int getType(){
+            return type;
+        }
+        public float getSpeed(){
+            return speed;
+        }
+    }
 }

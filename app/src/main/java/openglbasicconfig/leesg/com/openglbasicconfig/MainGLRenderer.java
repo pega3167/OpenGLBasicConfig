@@ -48,12 +48,17 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     Button mIntroButtons[];
     Square mStageScreen;
     Button mStageButtons[];
+    Button mShootButton;
     Button mBackButton;
     Aim mAim;
     //3D 오브젝트
-    Planet testPlanet[];
     Mesh sample;
     Mesh mMissile;
+    // planet texture
+    int planetTexureHandle[] = new int[1];
+    // Stage
+    Stage mStage[] = new Stage[1];
+    boolean isAnimation = false;
     // frame
     int frame = 0;
     long startTime = 0;
@@ -118,14 +123,8 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         //initialize mesh
         mMissile = new Mesh(mProgramImage, mActivity);
         mMissile.loadOBJ("missile");
-        mMissile.setBitmap(mBitmapLoader.getImageHandle("drawable/missilesample",true));
-        testPlanet = new Planet[4];
-        Vector3f temp = new Vector3f();
-        temp.setXYZ(0f,0f,0f);
-        testPlanet[0] = new Planet(mProgramImage, 0.0f, 0.5f, 0.0f, 0.0f, 1, 1, 0.0001f, 1.0f, temp);
-        testPlanet[1] = new Planet(mProgramImage, 1.0f, 0.1f, 0.2f, 0.1f, 1, 1, 0.0001f, 1.0f, temp);
-        testPlanet[2] = new Planet(mProgramImage, 2.0f, 0.1f, 0.1f, 1.3f, 1, 1, 0.0001f, 1.0f, temp);
-        testPlanet[3] = new Planet(mProgramImage, 3.0f, 0.1f, 0.03f, 0.6f, 1, 1, 0.0001f, 1.0f, temp);
+        mMissile.setBitmap(mBitmapLoader.getImageHandle("drawable/missilesample", true));
+
         sample = new Mesh(mProgramImage, mActivity);
         //initialize camera
         mCamera = new Camera();
@@ -153,10 +152,6 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mLight.sendLight();
         mLight.sendMaterial();
         //bit map loader initialize
-        //지구
-        for(int i = 0 ; i < 4 ; i ++) {
-            testPlanet[i].setBitmap(mBitmapLoader.getImageHandle("drawable/earthmap", true), 1024, 512);
-        }
         //sample
         sample.setBitmap(mBitmapLoader.getImageHandle("drawable/missilesample", true));
         sample.loadOBJ("missile");
@@ -183,6 +178,10 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             mStageButtons[i].setPos(mScreenConfig.getmVirtualHeight() / 6 + i * mScreenConfig.getmVirtualHeight() / 6, 4 * mScreenConfig.getmVirtualHeight() / 6);
             mStageButtons[i].setIsActive(true);
         }
+        mShootButton = new Button(mProgramImage, mProgramSolidColor, this);
+        mShootButton.setBitmap(mBitmapLoader.getImageHandle("drawable/launch", false), mScreenConfig.getmVirtualWidth() / 6, mScreenConfig.getmVirtualWidth() / 6);
+        mShootButton.setPos(mScreenConfig.getmVirtualWidth() * 11 / 12, mScreenConfig.getmVirtualWidth() / 12);
+        mShootButton.setIsActive(true);
         //폰트
         mFontSample.setBitmap(mBitmapLoader.getHangulHandle("하하하", 480, Color.BLUE, -1, 1.0f), (int) mBitmapLoader.getWordLength(), 480);
         mFontSample.setPos(mScreenConfig.getmVirtualWidth() / 2, mScreenConfig.getmVirtualHeight() / 2);
@@ -191,17 +190,42 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mAim = new Aim(mProgramImage);
         mAim.setShootPos(-3.0f, 0.0f, 0.0f); mAim.setShootVelocity(0.01f, 0.0f, 0.0f);
         mAim.setBitmap(mBitmapLoader.getImageHandle("drawable/white", true));
-        mAim.setupVertexBuffer(testPlanet, 4);
+        //행성 텍스쳐 로드
+        planetTexureHandle[0] = mBitmapLoader.getImageHandle("drawable/earthmap", true);
+        //스테이지 정보 로드
+        initStage(0);
+    }
+
+    public void initStage(int stageNum) {
+        Vector3f temp = new Vector3f();
+        temp.setXYZ(0,0,0);
+        switch(stageNum) {
+            case 0: {
+                mStage[stageNum] = new Stage(mProgramImage, 4, 3);
+                mStage[stageNum].planetList[0] = new Planet(mProgramImage, 0.0f, 0.5f, 0.0f, 0.0f, 1, 1, 0.0001f, 1.0f, temp);
+                mStage[stageNum].planetList[1] = new Planet(mProgramImage, 1.0f, 0.1f, 0.2f, 0.1f, 1, 1, 0.0001f, 1.0f, temp);
+                mStage[stageNum].planetList[2] = new Planet(mProgramImage, 2.0f, 0.1f, 0.1f, 1.3f, 1, 1, 0.0001f, 1.0f, temp);
+                mStage[stageNum].planetList[3] = new Planet(mProgramImage, 3.0f, 0.1f, 0.03f, 0.6f, 1, 1, 0.0001f, 1.0f, temp);
+
+                for(int i = 0 ; i < mStage[stageNum].listSize ; i ++) {
+                    mStage[stageNum].planetList[i].setBitmap(planetTexureHandle[0], 1024, 512);
+                }
+                break;
+            }
+        }
     }
 
     public void update() {
-        for ( int i = 0; i < testMissile.size(); i++) {
-            testMissile.elementAt(i).updateCurrentPos();
-            testMissile.elementAt(i).updateVelocity(testPlanet, 4);
-            testMissile.elementAt(i).updateAngle();
+        if(mStage[ConstMgr.STAGE].isAimMode) {
+            mAim.setShootPos(-3.0f, 0.0f, 0.0f); mAim.setShootVelocity(0.01f, 0.0f, 0.0f);
+            mAim.setupVertexBuffer(mStage[ConstMgr.STAGE].planetList, 4);
+        } else {
+            for (int i = 0; i < testMissile.size(); i++) {
+                testMissile.elementAt(i).updateCurrentPos();
+                testMissile.elementAt(i).updateVelocity(mStage[ConstMgr.STAGE].planetList, 4);
+                testMissile.elementAt(i).updateAngle();
+            }
         }
-        mAim.setShootPos(-3.0f, 0.0f, 0.0f); mAim.setShootVelocity(0.01f, 0.0f, 0.0f);
-        mAim.setupVertexBuffer(testPlanet, 4);
         // send light & material properties
         mLight.sendLight();
         mLight.sendMaterial();
@@ -216,6 +240,18 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         long elapsed = now - mLastTime;
         int tempFrame = frame;
         frame = (int)((mLastTime - startTime) * ConstMgr.FPS / 1000);
+        if(!mStage[ConstMgr.STAGE].isAimMode) {
+            mStage[ConstMgr.STAGE].currentFrame = frame - mStage[ConstMgr.STAGE].turnStartFrame;
+            if (mStage[ConstMgr.STAGE].currentFrame > ConstMgr.FRAME_PER_TURN) {
+                mStage[ConstMgr.STAGE].turn += 1;
+                mStage[ConstMgr.STAGE].currentFrame = (ConstMgr.FRAME_PER_TURN * mStage[ConstMgr.STAGE].turn );
+                mStage[ConstMgr.STAGE].isAimMode = true;
+                mShootButton.setIsActive(true);
+            } else {
+                mStage[ConstMgr.STAGE].currentFrame += mStage[ConstMgr.STAGE].turn * ConstMgr.FRAME_PER_TURN;
+            }
+        }
+
         if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_INTRO)
             RenderIntro(mMtrxProjectionAndView, mMtrxOrthoAndView);
         else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_STAGE)
@@ -261,6 +297,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         // Render UI
         GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
         mBackButton.draw(orth);
+        mShootButton.draw(orth);
 
         // Render 3D
         GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 0);
@@ -273,29 +310,32 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             else GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 0);
             Matrix.setIdentityM(tempMatrix, 0);
             Matrix.setIdentityM(mModelMatrix, 0);
-            Matrix.scaleM(tempMatrix, 0, testPlanet[i].getRadius(), testPlanet[i].getRadius(), testPlanet[i].getRadius());
+            Matrix.scaleM(tempMatrix, 0, mStage[ConstMgr.STAGE].planetList[i].getRadius(), mStage[ConstMgr.STAGE].planetList[i].getRadius(), mStage[ConstMgr.STAGE].planetList[i].getRadius());
             Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
             Matrix.setIdentityM(tempMatrix, 0);
-            Matrix.rotateM(tempMatrix, 0, frame * testPlanet[i].getRotationSpeed(), 0.0f, 1.0f, 0.0f);
+            Matrix.rotateM(tempMatrix, 0, mStage[ConstMgr.STAGE].currentFrame * mStage[ConstMgr.STAGE].planetList[i].getRotationSpeed(), 0.0f, 1.0f, 0.0f);
             Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
             Matrix.setIdentityM(tempMatrix, 0);
-            Matrix.translateM(tempMatrix, 0, testPlanet[i].getOrbitRadius(), 0.0f, 0.0f);
+            Matrix.translateM(tempMatrix, 0, mStage[ConstMgr.STAGE].planetList[i].getOrbitRadius(), 0.0f, 0.0f);
             Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
             Matrix.setIdentityM(tempMatrix, 0);
-            Matrix.rotateM(tempMatrix, 0, frame * testPlanet[i].getRevolutionSpeed(), 0.0f, 1.0f, 0.0f);
+            Matrix.rotateM(tempMatrix, 0, mStage[ConstMgr.STAGE].currentFrame * mStage[ConstMgr.STAGE].planetList[i].getRevolutionSpeed(), 0.0f, 1.0f, 0.0f);
             Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
             //현재 행성 위치 업데이트
+            temp.setXYZ(0, 0, 0);
             temp.multM(mModelMatrix, 1.0f);
-            testPlanet[i].setCurrentPos(temp);
+            mStage[ConstMgr.STAGE].planetList[i].setCurrentPos(temp);
             //최종 P * V * M 매트릭스
             Matrix.multiplyMM(mModelViewMatrix, 0, mCamera.viewMatrix, 0, mModelMatrix, 0);
             Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
             GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(mProgramImage, "modelViewMatrix"), 1, false, mModelViewMatrix, 0);
-            testPlanet[i].draw(mMVPMatrix);
+            mStage[ConstMgr.STAGE].planetList[i].draw(mMVPMatrix);
         }
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
-        mAim.draw(pv);
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 0);
+        if(mStage[ConstMgr.STAGE].isAimMode) {
+            GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
+            mAim.draw(pv);
+            GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 0);
+        }
         //미사일
         for( int i = 0 ; i < testMissile.size() ; i++ ) {
             Matrix.setIdentityM(tempMatrix, 0);
@@ -349,6 +389,8 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                 case MotionEvent.ACTION_DOWN: {
                     for (int i = 0; i < ConstMgr.STAGEBUTTON_NUM; i++) {
                         if(mStageButtons[i].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
+                            ConstMgr.STAGE = 0;
+                            //initStage(ConstMgr.STAGE);
                             ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_GAME;
                             startTime = mLastTime;
                         }
@@ -367,7 +409,12 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                         testMissile.add(temp);
                         testMissile.elementAt(testMissile.size() - 1).setCurrentPos(-3.0f, 0.0f, 0.0f);
                         testMissile.elementAt(testMissile.size() - 1).setVelocity(0.01f, 0.0f, 0.0f);
+                    } else if(mShootButton.isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
+                        mStage[ConstMgr.STAGE].isAimMode = false;
+                        mStage[ConstMgr.STAGE].turnStartFrame = frame;
+                        mShootButton.setIsActive(false);
                     }
+                    touchObjectCheck(x,y);
                     x1 = event.getX(0);
                     y1 = event.getY(0);
                     break;
@@ -435,4 +482,42 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     private void selectTouch(int x, int y) {
         Log.e("", "선택한 좌표는 "+x+","+y);
     }
+
+    private void touchObjectCheck(int x, int y){
+        float temp_x = (2.0f * x) / mDeviceWidth - 1.0f;
+        float temp_y = 1.0f - (2.0f * y) / mDeviceHeight;
+        float temp_z = 1.0f;
+        float[] ray_nds = new float[3];
+        ray_nds[0] = temp_x;
+        ray_nds[1] = temp_y;
+        ray_nds[2] = temp_z;
+        float[] ray_clip = new float[4];
+        ray_clip[0] = ray_nds[0];
+        ray_clip[1] = ray_nds[1];
+        ray_clip[2] = -1.0f;
+        ray_clip[3] = 1.0f;
+        float[] ray_eye = new float[4];
+        float[] temp_inv = new float[16];
+        Matrix.invertM(temp_inv, 0, mCamera.projectionMatrix, 0);
+        Matrix.multiplyMV(ray_eye, 0, temp_inv, 0, ray_clip, 0);
+        ray_eye[2] = -1.0f;
+        ray_eye[3] = 0.0f;
+        Matrix.invertM(temp_inv, 0, mCamera.viewMatrix, 0);
+        Matrix.multiplyMV(ray_eye,0,temp_inv,0,ray_eye,0);
+        Vector3f ray_wor = new Vector3f(ray_eye[0],ray_eye[1],ray_eye[2]);
+        ray_wor.normalize();
+
+
+        for(int i=0;i<4;i++){//모든 행성에대해서 잘모름 ㅠㅠ
+            Vector3f temp1 = new Vector3f(mCamera.eye[0]-mStage[ConstMgr.STAGE].planetList[i].getCurrentPos().x,mCamera.eye[1]-mStage[ConstMgr.STAGE].planetList[i].getCurrentPos().y,mCamera.eye[2]-mStage[ConstMgr.STAGE].planetList[i].getCurrentPos().z);//planet현위치 넣기
+            float b = ray_wor.dot(temp1);
+            float c = temp1.dot(temp1) - mStage[ConstMgr.STAGE].planetList[i].getRadius()*mStage[ConstMgr.STAGE].planetList[i].getRadius(); //아마도 r^2으로 예상됨
+            if ((b*b - c >= 0) && ((-b + Math.sqrt(b * b - c ) > 0) || ((-b - Math.sqrt(b * b - c) > 0))))
+            {
+                mStage[ConstMgr.STAGE].planetList[i].setRadius(mStage[ConstMgr.STAGE].planetList[i].getRadius()+1.0f);
+                //이때 i 번째 행성 선택
+            }
+        }
+    }
+
 }
