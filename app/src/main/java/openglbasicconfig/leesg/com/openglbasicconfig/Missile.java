@@ -9,6 +9,8 @@ public class Missile {
     private Vector3f currentPos;
     private Vector3f velocity;
     private float angle;
+    // + 수명, 활성화여부 만들어야함
+    // + 시뮬레이터
     //생성자
     public Missile() {
         currentPos = new Vector3f();

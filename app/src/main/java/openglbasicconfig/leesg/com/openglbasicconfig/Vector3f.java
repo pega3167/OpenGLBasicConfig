@@ -64,4 +64,20 @@ public class Vector3f {
     public float dot(Vector3f v){
         return x*v.x + y*v.y + z*v.z;
     }
+
+    public Vector3f multScalar(float s) {
+        Vector3f result = new Vector3f(this.x, this.y ,this.z);
+        result.x *= s;
+        result.y *= s;
+        result.z *= s;
+        return result;
+    }
+
+    public Vector3f minus(Vector3f minVal) {
+        Vector3f result = new Vector3f(this.x, this.y ,this.z);
+        result.x -= minVal.x;
+        result.y -= minVal.y;
+        result.z -= minVal.z;
+        return result;
+    }
 }

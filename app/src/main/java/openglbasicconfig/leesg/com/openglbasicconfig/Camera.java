@@ -92,7 +92,16 @@ public class Camera {
         Matrix.multiplyMM(viewMatrix,0,viewMatrix,0,tempMatrix,0);
         */
     }
-
+    public void setAtMove(float x, float y, float z){
+        Vector3f temp = new Vector3f(eye[0]-at[0],eye[1]-at[1],eye[2]-at[2]);
+        at[0] = x;
+        at[1] = y;
+        at[2] = z;
+        eye[0] = at[0] + temp.x;
+        eye[1] = at[1] + temp.y;
+        eye[2] = at[2] + temp.z;
+        setViewMatrix();
+    }
     public void setMove(float x, float y){
         Vector3f a1 = new Vector3f(eye[0]-at[0],eye[1]-at[1],eye[2]-at[2]);
         Vector3f a2 = new Vector3f(up[0],up[1],up[2]);

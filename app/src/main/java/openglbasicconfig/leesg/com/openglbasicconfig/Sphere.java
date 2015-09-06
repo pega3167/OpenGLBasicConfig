@@ -43,6 +43,11 @@ public class Sphere {
         mtrxhandle = GLES20.glGetUniformLocation(mProgramImage, "uMVPMatrix");
         mSamplerLoc = GLES20.glGetUniformLocation(mProgramImage, "TEX");
     }
+
+    public static int getmProgramImage() {
+        return mProgramImage;
+    }
+
     // 이미지 핸들, 가로, 세로 값을 받아와 설정
     public void setBitmap(int handle, int width, int height) {
         mBitmapCount = 1;
