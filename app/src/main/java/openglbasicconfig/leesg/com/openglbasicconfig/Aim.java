@@ -29,6 +29,7 @@ public class Aim {
     private Vector3f shootPos;
     private Vector3f shootVelocity;
     private Vector3f currentVelocity;
+    private boolean isAimed;
 
     public Aim(int programImage) {
         mProgramImage = programImage;
@@ -40,6 +41,7 @@ public class Aim {
         shootPos = new Vector3f();
         shootVelocity = new Vector3f();
         currentVelocity = new Vector3f();
+        isAimed = false;
         vertexCount = ConstMgr.MAX_AIM_VERTEXCOUNT;
         ByteBuffer mVertices = ByteBuffer.allocateDirect(vertexCount * 3 * 4);
         mVertices.order(ByteOrder.nativeOrder());
@@ -96,14 +98,6 @@ public class Aim {
         vertexCount = ConstMgr.MAX_AIM_VERTEXCOUNT;
         vertexBuffer.position(0);
     }
-
-    public void printVB() {
-        //for ( int i = 0 ; i < vertexCount; i++) {
-        Log.e("",""+vertexBuffer.get(0) + " "+vertexBuffer.get(1)+" "+vertexBuffer.get(2));
-        Log.e("",""+vertexBuffer.get(3) + " "+vertexBuffer.get(4)+" "+vertexBuffer.get(5));
-        vertexBuffer.position(0);
-        //}
-    }
     private boolean updateVelocity(Planet[] planetList, int listSize, Vector3f currentPos, int loop) {
         float r;
         float a;
@@ -126,20 +120,20 @@ public class Aim {
         return false;
     }
 
+    public void setIsAimed(boolean isAimed) {
+        this.isAimed = isAimed;
+    }
     public void setShootVelocity(Vector3f shootVelocity) {
         this.shootVelocity = shootVelocity;
     }
-
     public void setShootVelocity(float x, float y, float z) {
         this.shootVelocity.x = x;
         this.shootVelocity.y = y;
         this.shootVelocity.z = z;
     }
-
     public void setShootPos(Vector3f shootPos) {
         this.shootPos = shootPos;
     }
-
     public void setShootPos(float x, float y, float z) {
         this.shootPos.x = x;
         this.shootPos.y = y;
@@ -149,10 +143,10 @@ public class Aim {
     public Vector3f getShootVelocity() {
         return shootVelocity;
     }
-
     public Vector3f getShootPos() {
         return shootPos;
     }
+    public boolean getIsAimed() { return this.isAimed; }
 
     public void draw(float[] m) {
         //GLES20.glLineWidth(5);

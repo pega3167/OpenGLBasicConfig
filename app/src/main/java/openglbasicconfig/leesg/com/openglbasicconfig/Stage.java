@@ -12,12 +12,11 @@ public class Stage {
     public int turnStartFrame;
     public int currentFrame;
     public int turn;
-    public boolean isAimMode;
+    //public boolean isAimMode;
 
     public Stage(int programImage, int listSize, int userNum) {
         this.listSize = listSize;
         this.userNum = userNum;
-        isAimMode = true;
         turnStartFrame = 0;
         currentFrame = 0;
         turn = 0;

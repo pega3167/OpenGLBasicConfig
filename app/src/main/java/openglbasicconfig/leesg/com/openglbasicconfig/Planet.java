@@ -144,8 +144,7 @@ public class Planet extends Sphere {
             this.cannonListSize += 1;
         }
     }
-    public void updateCannon(int turn) {
-        int frame = ConstMgr.FRAME_PER_TURN * turn;
+    public void updateCannon(int frame) {
         float modelMatrix[] = new float[16];
         float tempMatrix[] = new float[16];
         for(int i = 0; i < this.cannonListSize ; i++) {
@@ -165,6 +164,7 @@ public class Planet extends Sphere {
             Matrix.setIdentityM(tempMatrix, 0);
             Matrix.rotateM(tempMatrix, 0, frame * this.revolutionSpeed, 0, 1, 0);
             Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
+            cannons[i].currentPos.setXYZ(0, 0, 0);
             cannons[i].currentPos.multM(modelMatrix, 1.0f);
             cannons[i].aim.setShootPos(cannons[i].currentPos);
             Vector3f temp = this.cannons[i].aim.getShootPos().minus(this.currentPos);

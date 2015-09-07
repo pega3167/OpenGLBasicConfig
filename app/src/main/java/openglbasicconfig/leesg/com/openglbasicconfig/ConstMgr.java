@@ -25,5 +25,20 @@ public class ConstMgr {
     public static int STAGE = 0;
     // Aim vertex 최대값
     public final static int MAX_AIM_VERTEXCOUNT = 1000;
-
+    // 게임 스크린에서 세팅 화면과 애니메이션
+    public final static int RENDER_SETTING = 0;
+    public final static int RENDER_ANIMATION = 1;
+    public static int RENDER_MODE = RENDER_SETTING;
+    // 게임 스크린에서의 카메라 모드와 조준 모드 선택사항
+    public final static int TURN_CAMERA = 0;
+    public final static int TURN_AIM = 1;
+    public static int TURN_MODE = TURN_CAMERA;
+    // 조준 선택된 미사일
+    public final static int CANNON_ONE = 0;
+    public final static int CANNON_TWO = 1;
+    public final static int CANNON_THREE = 2;
+    public final static int CANNON_FOUR = 3;
+    public final static int CANNON_FIVE = 4;
+    public final static int CANNON_NOTHING = 5;
+    public static int CANNON = CANNON_NOTHING;
 }
