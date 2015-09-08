@@ -24,7 +24,7 @@ public class ConstMgr {
     //현재 stage
     public static int STAGE = 0;
     // Aim vertex 최대값
-    public final static int MAX_AIM_VERTEXCOUNT = 640;
+    public final static int MAX_AIM_VERTEXCOUNT = 512;
     // 게임 스크린에서 세팅 화면과 애니메이션
     public final static int RENDER_SETTING = 0;
     public final static int RENDER_ANIMATION = 1;

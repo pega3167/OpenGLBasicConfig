@@ -141,7 +141,6 @@ public class Aim {
     }
 
     public Vector3f getShootVelocity() {
-        Log.e("", "처음" + shootVelocity.x + "," + shootVelocity.y + "," + shootVelocity.z);
         return shootVelocity;
     }
     public Vector3f getShootPos() {

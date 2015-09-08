@@ -41,6 +41,5 @@ uniform float color_A;
             //result.a = 1.0;
             gl_FragColor = result;
             //gl_FragColor = texture2D(TEX, tc);
-
         }
     }

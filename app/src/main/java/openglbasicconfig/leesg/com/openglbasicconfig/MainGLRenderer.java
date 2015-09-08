@@ -254,7 +254,6 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                         mStage[ConstMgr.STAGE].updatePosInList(ConstMgr.FRAME_PER_TURN * mStage[ConstMgr.STAGE].turn + i);
                         Vector3f pos =new Vector3f();
                         pos.copy(mStage[ConstMgr.STAGE].planetList[j].cannons[k].missile.positionBuffer[i]);
-                        Log.e("", "현재업뎃중" + pos.x + "," + pos.y + "," + pos.z);
                     }
                     mStage[ConstMgr.STAGE].updatePosInList(ConstMgr.FRAME_PER_TURN * mStage[ConstMgr.STAGE].turn);
                 }
@@ -382,7 +381,6 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                             Matrix.setIdentityM(tempMatrix, 0);
                             Vector3f pos = new Vector3f();
                             pos.copy(mStage[ConstMgr.STAGE].planetList[j].cannons[i].missile.positionBuffer[turnframe]);
-                            Log.e("","현재"+ turnframe+"프레임 : " + pos.x + "," + pos.y+ "," +pos.z);
                             Matrix.translateM(tempMatrix, 0, pos.x, pos.y, pos.z);
                             Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
                             //최종 P * V * M 매트릭스
@@ -420,7 +418,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         if((ConstMgr.RENDER_MODE == ConstMgr.RENDER_SETTING) && (ConstMgr.TURN_MODE == ConstMgr.TURN_AIM)) {
             GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
             for(int i = 0 ; i < mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getCannonListSize() ; i++) {
-                if( mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[i].aim.getIsAimed() || ConstMgr.CANNON == i) {
+                if( mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[i].aim.getIsAimed()) {
                     mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[i].aim.draw(pv);
                 }
             }
@@ -507,6 +505,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                             target = target.multScalar(mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[ConstMgr.CANNON].getSpeed());
                             mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[ConstMgr.CANNON].aim.setShootVelocity(target);
                             mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[ConstMgr.CANNON].aim.setupVertexBuffer(mStage[ConstMgr.STAGE].planetList, mStage[ConstMgr.STAGE].listSize);
+                            mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[ConstMgr.CANNON].aim.setIsAimed(true);///
                         }
                     }
                     touchObjectCheck(x,y);
