@@ -1,7 +1,6 @@
 package openglbasicconfig.leesg.com.openglbasicconfig;
 
 import android.opengl.GLES20;
-import android.util.Log;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -18,8 +17,8 @@ public class Aim {
     private int mNormalLoc;
     //private int mTexCoordLoc;
     private int mtrxhandle;
-    private int mSamplerLoc;
-    private int mHandleBitmap;
+    //private int mSamplerLoc;
+    //private int mHandleBitmap;
     private FloatBuffer vertexBuffer;
     private ShortBuffer indexBuffer;
     private FloatBuffer normBuffer;
@@ -37,7 +36,7 @@ public class Aim {
         mNormalLoc = GLES20.glGetAttribLocation(mProgramImage, "normal");
         //mTexCoordLoc = GLES20.glGetAttribLocation(mProgramImage, "texcoord");
         mtrxhandle = GLES20.glGetUniformLocation(mProgramImage, "uMVPMatrix");
-        mSamplerLoc = GLES20.glGetUniformLocation(mProgramImage, "TEX");
+        //mSamplerLoc = GLES20.glGetUniformLocation(mProgramImage, "TEX");
         shootPos = new Vector3f();
         shootVelocity = new Vector3f();
         currentVelocity = new Vector3f();
@@ -89,7 +88,7 @@ public class Aim {
             vertexBuffer.put(3*i, currentPos.x);
             vertexBuffer.put(3*i+1, currentPos.y);
             vertexBuffer.put(3 * i + 2, currentPos.z);
-            if(updateVelocity(planetList, listSize, currentPos, i)) {
+            if(updateVelocity(planetList, listSize, currentPos)) {
                 vertexCount = i+1;
                 vertexBuffer.position(0);
                 return;
@@ -98,7 +97,7 @@ public class Aim {
         vertexCount = ConstMgr.MAX_AIM_VERTEXCOUNT;
         vertexBuffer.position(0);
     }
-    private boolean updateVelocity(Planet[] planetList, int listSize, Vector3f currentPos, int loop) {
+    private boolean updateVelocity(Planet[] planetList, int listSize, Vector3f currentPos) {
         float r;
         float a;
         Vector3f direction = new Vector3f();
@@ -164,7 +163,7 @@ public class Aim {
         GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
         //GLES20.glDisable(GLES20.GL_BLEND);
         //이미지 핸들을 바인드 한다. 수정중
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mHandleBitmap);
+        //GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mHandleBitmap);
         GLES20.glDrawElements(GLES20.GL_LINE_STRIP, vertexCount, GLES20.GL_UNSIGNED_SHORT, indexBuffer);
         GLES20.glDisableVertexAttribArray(mPositionHandle);
         GLES20.glDisableVertexAttribArray(mNormalLoc);

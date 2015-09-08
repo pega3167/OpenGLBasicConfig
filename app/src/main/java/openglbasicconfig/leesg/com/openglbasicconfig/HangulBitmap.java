@@ -14,8 +14,8 @@ public class HangulBitmap {
     public Bitmap bitmap;
     private Bitmap.Config config;
     //캔버스를 이용하여 한글 출력
-    private Canvas canvas;
-    private Paint mPaint;
+    Canvas canvas;
+    Paint mPaint;
     private Typeface font;
     private String htext;
     //생성자 폰트를 설정

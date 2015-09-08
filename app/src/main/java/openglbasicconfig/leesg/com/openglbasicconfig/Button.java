@@ -15,7 +15,7 @@ public class Button extends Square{
     }
     public boolean isSelected(int x, int y) {
         boolean returnValue = super.isSelected(x,y);
-        if(returnValue == true) {
+        if(returnValue) {
             mMainGLRenderer.mActivity.soundButton();
         }
         return returnValue;

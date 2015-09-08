@@ -34,7 +34,7 @@ public class BitmapLoader {
     }
 
     public int getHangulHandle(String text, int textSize, int fontColor, int canvasColor, float scale) {
-        bitmap = Bitmap.createBitmap((int) (textSize * text.length()), (int) (textSize), Bitmap.Config.ARGB_8888);
+        bitmap = Bitmap.createBitmap(textSize * text.length(), textSize, Bitmap.Config.ARGB_8888);
         wordLength = mHangulBitmap.GetBitmap(bitmap, text, textSize, fontColor, canvasColor, scale);
         imageHandle = getImageHandle(bitmap);
         return imageHandle;

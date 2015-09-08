@@ -9,6 +9,10 @@ public class Missile {
     private Vector3f currentPos;
     private Vector3f velocity;
     private float angle;
+    private boolean isActive = false;
+    private int life = ConstMgr.FRAME_PER_TURN / 10 * 8;
+    public float[] angleBuffer = new float[this.life];
+    public Vector3f[] positionBuffer = new Vector3f[this.life];
     // + 수명, 활성화여부 만들어야함
     // + 시뮬레이터
     //생성자
@@ -16,8 +20,15 @@ public class Missile {
         currentPos = new Vector3f();
         velocity = new Vector3f();
         angle = 0;
+        for(int i = 0 ; i < this.life ; i++) {
+            angleBuffer[i] = 0;
+            positionBuffer[i] = new Vector3f();
+        }
     }
-
+    public void updateBuffer(Vector3f pos, float angle, int index) {
+        this.positionBuffer[index] = pos;
+        this.angleBuffer[index] = angle;
+    }
     // 변수 설정 함수
     public void setCurrentPos(Vector3f pos) {
         this.currentPos.x = pos.x;
