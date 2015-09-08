@@ -245,9 +245,18 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
 
     public void beforeSimul() {
         for(int j = 0 ; j < mStage[ConstMgr.STAGE].listSize ; j++) {
-            for(int k = 0 ; j < mStage[ConstMgr.STAGE].planetList[j].getCannonListSize(); j++) {
-                for (int i = 0; i < ConstMgr.FRAME_PER_TURN; i++) {
-
+            for(int k = 0 ; k < mStage[ConstMgr.STAGE].planetList[j].getCannonListSize(); k++) {
+                if(mStage[ConstMgr.STAGE].planetList[j].cannons[k].aim.getIsAimed()) {
+                    mStage[ConstMgr.STAGE].planetList[j].cannons[k].missile.setIsActive(true);
+                    Log.e("","" + mStage[ConstMgr.STAGE].planetList[j].cannons[k].missile.getVelocity().x);
+                    for (int i = 0; i < ConstMgr.FRAME_PER_TURN; i++) {
+                        mStage[ConstMgr.STAGE].planetList[j].cannons[k].missile.updateBuffer(i, mStage[ConstMgr.STAGE].planetList, mStage[ConstMgr.STAGE].listSize);
+                        mStage[ConstMgr.STAGE].updatePosInList(ConstMgr.FRAME_PER_TURN * mStage[ConstMgr.STAGE].turn + i);
+                        Vector3f pos =new Vector3f();
+                        pos.copy(mStage[ConstMgr.STAGE].planetList[j].cannons[k].missile.positionBuffer[i]);
+                        Log.e("", "현재업뎃중" + pos.x + "," + pos.y + "," + pos.z);
+                    }
+                    mStage[ConstMgr.STAGE].updatePosInList(ConstMgr.FRAME_PER_TURN * mStage[ConstMgr.STAGE].turn);
                 }
             }
         }
@@ -261,8 +270,11 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         for(int i = 0 ; i < mStage[ConstMgr.STAGE].listSize; i++) {
             mStage[ConstMgr.STAGE].planetList[i].updateCannon(mStage[ConstMgr.STAGE].currentFrame);
         }
-        for(int i = 0 ; i < mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getCannonListSize(); i++) {
-            mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[i].aim.setIsAimed(false);
+        for(int j = 0 ; j < mStage[ConstMgr.STAGE].listSize ; j++) {
+            for (int i = 0; i < mStage[ConstMgr.STAGE].planetList[j].getCannonListSize(); i++) {
+                mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[i].aim.setIsAimed(false);
+                mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[i].missile.setIsActive(false);
+            }
         }
     }
 
@@ -355,23 +367,32 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         }
         //미사일
         if(ConstMgr.RENDER_MODE == ConstMgr.RENDER_ANIMATION) {
-            for (int i = 0; i < mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getCannonListSize(); i++) {
-                Matrix.setIdentityM(tempMatrix, 0);
-                Matrix.setIdentityM(mModelMatrix, 0);
-                Matrix.scaleM(tempMatrix, 0, 0.0001f, 0.0001f, 0.0001f);
-                Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
-                Matrix.setIdentityM(tempMatrix, 0);
-                Matrix.rotateM(tempMatrix, 0, mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[i].missile.getAngle() - 90, 0.0f, 1.0f, 0.0f);
-                Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
-                Matrix.setIdentityM(tempMatrix, 0);
-                Vector3f pos = mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[i].missile.getCurrentPos();
-                Matrix.translateM(tempMatrix, 0, pos.x, pos.y, pos.z);
-                Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
-                //최종 P * V * M 매트릭스
-                Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
-                Matrix.multiplyMM(mModelViewMatrix, 0, mCamera.viewMatrix, 0, mModelMatrix, 0);
-                GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(mProgramImage, "modelViewMatrix"), 1, false, mModelViewMatrix, 0);
-                mMissile.draw(mMVPMatrix);
+            int turnframe = mStage[ConstMgr.STAGE].currentFrame - mStage[ConstMgr.STAGE].turn * ConstMgr.FRAME_PER_TURN;
+            if (turnframe < ConstMgr.FRAME_PER_TURN / 10 * 8) {
+                for (int j = 0; j < mStage[ConstMgr.STAGE].listSize; j++) {
+                    for (int i = 0; i < mStage[ConstMgr.STAGE].planetList[j].getCannonListSize(); i++) {
+                        if(mStage[ConstMgr.STAGE].planetList[j].cannons[i].missile.getIsActive()) {
+                            Matrix.setIdentityM(tempMatrix, 0);
+                            Matrix.setIdentityM(mModelMatrix, 0);
+                            Matrix.scaleM(tempMatrix, 0, 0.0001f, 0.0001f, 0.0001f);
+                            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+                            Matrix.setIdentityM(tempMatrix, 0);
+                            Matrix.rotateM(tempMatrix, 0, mStage[ConstMgr.STAGE].planetList[j].cannons[i].missile.angleBuffer[turnframe] - 90, 0.0f, 1.0f, 0.0f);
+                            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+                            Matrix.setIdentityM(tempMatrix, 0);
+                            Vector3f pos = new Vector3f();
+                            pos.copy(mStage[ConstMgr.STAGE].planetList[j].cannons[i].missile.positionBuffer[turnframe]);
+                            Log.e("","현재"+ turnframe+"프레임 : " + pos.x + "," + pos.y+ "," +pos.z);
+                            Matrix.translateM(tempMatrix, 0, pos.x, pos.y, pos.z);
+                            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+                            //최종 P * V * M 매트릭스
+                            Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
+                            Matrix.multiplyMM(mModelViewMatrix, 0, mCamera.viewMatrix, 0, mModelMatrix, 0);
+                            GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(mProgramImage, "modelViewMatrix"), 1, false, mModelViewMatrix, 0);
+                            mMissile.draw(mMVPMatrix);
+                        }
+                    }
+                }
             }
         }
         // Render UI
@@ -422,10 +443,10 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         final int x = (int) event.getX();
         final int y = (int) event.getY();
         mPointerId = event.getPointerId(0);
-        final int action = event.getAction();
+        final int action = event.getActionMasked();
         if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_INTRO) {
             //인트로 화면 이벤트
-            switch (action & MotionEvent.ACTION_MASK) {
+            switch (action) {
                 case MotionEvent.ACTION_DOWN: {
                     if(mIntroButtons[0].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
                         ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_STAGE;
@@ -436,7 +457,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             }
         } else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_STAGE) {
             //스테이지 선택창 이벤트
-            switch(action & MotionEvent.ACTION_MASK) {
+            switch(action) {
                 case MotionEvent.ACTION_DOWN: {
                     for (int i = 0; i < ConstMgr.STAGEBUTTON_NUM; i++) {
                         if(mStageButtons[i].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
@@ -461,6 +482,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             switch (action) {
                 case MotionEvent.ACTION_DOWN:
                     if(mShootButton.isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
+                        beforeSimul();
                         ConstMgr.RENDER_MODE = ConstMgr.RENDER_ANIMATION;
                         ConstMgr.TURN_MODE = ConstMgr.TURN_CAMERA;
                         ConstMgr.CANNON = ConstMgr.CANNON_NOTHING;
@@ -555,14 +577,20 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                     if(aiming) {
                         //Vector3f direction = new Vector3f();
                         //Vector3f cannonDirection = new Vector3f();
-                        Vector3f direction = mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[ConstMgr.CANNON].aim.getShootVelocity();
+                        Vector3f direction = new Vector3f();
+                        Vector3f cannonDirection = new Vector3f();
+                        direction.copy(mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[ConstMgr.CANNON].aim.getShootVelocity());
                         direction.normalize();
-                        Vector3f cannonDirection = mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[ConstMgr.CANNON].aim.getShootPos().minus(mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getCurrentPos());
+                        cannonDirection.copy(mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[ConstMgr.CANNON].aim.getShootPos().minus(mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getCurrentPos()));
                         cannonDirection.normalize();
                         if(direction.dot(cannonDirection) > 0) {
                             mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[ConstMgr.CANNON].aim.setIsAimed(true);
+                            mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[ConstMgr.CANNON].missile.setCurrentPos(mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[ConstMgr.CANNON].aim.getShootPos());
+                            mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[ConstMgr.CANNON].missile.setVelocity(mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[ConstMgr.CANNON].aim.getShootVelocity());
+                            mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[ConstMgr.CANNON].missile.setIsActive(true);
                         } else {
                             mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[ConstMgr.CANNON].aim.setIsAimed(false);
+                            mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[ConstMgr.CANNON].missile.setIsActive(false);
                         }
                         aiming = false;
                     }
@@ -570,10 +598,10 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                 case MotionEvent.ACTION_POINTER_UP:
                     break;
                 case MotionEvent.ACTION_POINTER_DOWN:
-                    x1 = mScreenConfig.deviceToVirtualX((int)event.getX(0));    ///////////////////////
+                    x1 = mScreenConfig.deviceToVirtualX((int) event.getX(0));    ///////////////////////
                     y1 = mScreenConfig.deviceToVirtualY((int) event.getY(0));  ////////////////////
-                    x2 = mScreenConfig.deviceToVirtualX((int)event.getX(1));  //////////////////////
-                    y2 = mScreenConfig.deviceToVirtualY((int)event.getY(1));  //////////////////////
+                    x2 = mScreenConfig.deviceToVirtualX((int) event.getX(1));  //////////////////////
+                    y2 = mScreenConfig.deviceToVirtualY((int) event.getY(1));  //////////////////////
                     distance = (float)Math.sqrt((double)((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2)));
             }
         }

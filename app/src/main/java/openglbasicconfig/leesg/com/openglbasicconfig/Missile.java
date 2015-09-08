@@ -11,8 +11,8 @@ public class Missile {
     private float angle;
     private boolean isActive = false;
     private int life = ConstMgr.FRAME_PER_TURN / 10 * 8;
-    public float[] angleBuffer = new float[this.life];
-    public Vector3f[] positionBuffer = new Vector3f[this.life];
+    public float[] angleBuffer = new float[ConstMgr.FRAME_PER_TURN];
+    public Vector3f[] positionBuffer = new Vector3f[ConstMgr.FRAME_PER_TURN];
     // + 수명, 활성화여부 만들어야함
     // + 시뮬레이터
     //생성자
@@ -20,14 +20,18 @@ public class Missile {
         currentPos = new Vector3f();
         velocity = new Vector3f();
         angle = 0;
-        for(int i = 0 ; i < this.life ; i++) {
+        for(int i = 0 ; i < ConstMgr.FRAME_PER_TURN ; i++) {
             angleBuffer[i] = 0;
             positionBuffer[i] = new Vector3f();
         }
     }
-    public void updateBuffer(Vector3f pos, float angle, int index) {
-        this.positionBuffer[index] = pos;
+    public void updateBuffer(int index, Planet[] planetList, int listSize) {
+        this.positionBuffer[index].copy(currentPos);
         this.angleBuffer[index] = angle;
+        this.updateVelocity(planetList, listSize);
+        this.updateCurrentPos();
+        this.updateAngle();
+        //Log.e("", "" + velocity.x+","+velocity.y+","+velocity.z);
     }
     // 변수 설정 함수
     public void setCurrentPos(Vector3f pos) {
@@ -50,12 +54,18 @@ public class Missile {
         this.velocity.y = vy;
         this.velocity.z = vz;
     }
+
+    public void setIsActive(boolean isActive) {
+        this.isActive = isActive;
+    }
+
     public void setAngle(float angle) { this.angle = angle; }
 
     // get함수
     public Vector3f getCurrentPos() { return this.currentPos; }
     public Vector3f getVelocity() { return this.velocity; }
     public float getAngle() { return angle; }
+    public boolean getIsActive() { return this.isActive; }
 
     // 업데이트 함수
     public void updateVelocity(Planet[] planetList, int listSize) {

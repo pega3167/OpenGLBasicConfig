@@ -1,6 +1,7 @@
 package openglbasicconfig.leesg.com.openglbasicconfig;
 
 import android.opengl.GLES20;
+import android.util.Log;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -140,6 +141,7 @@ public class Aim {
     }
 
     public Vector3f getShootVelocity() {
+        Log.e("", "처음" + shootVelocity.x + "," + shootVelocity.y + "," + shootVelocity.z);
         return shootVelocity;
     }
     public Vector3f getShootPos() {
