@@ -1,13 +1,13 @@
 package openglbasicconfig.leesg.com.openglbasicconfig;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.Log;
 import android.view.MotionEvent;
 
-import java.util.Vector;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -36,18 +36,24 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     ScreenConfig mScreenConfig;
     BitmapLoader mBitmapLoader;
     HangulBitmap mHangulBitmap;
+    // 카메라 & 빛
     Camera mCamera;
     Light mLight;
-    //객체
+    // 화면 이미지
     Square mIntroScreen;
-    Button mIntroButtons[];
     Square mStageScreen;
+    // 화면 버튼
+    Button mIntroButtons[];
     Button mStageButtons[];
     Button mShootButton;
     Button mMissileButton[];
     Button mModeButton[];
     Button mBackButton;
-    Aim mAim;
+    // 팝업창
+    private static Square popupWindow;
+    private static Square[] popupStr = new Square[ConstMgr.POPUP_MODE_SIZE];
+    private static Button[] popupBtns = new Button[ConstMgr.POPUP_BUTTON_SIZE];
+    private static Popup mPopup;
     //3D 오브젝트
     Mesh mMissile;
     Planet mUser;
@@ -55,7 +61,6 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     int planetTexureHandle[] = new int[1];
     // Stage
     Stage mStage[] = new Stage[1];
-    boolean isAnimation = false;
     // frame
     int frame = 0;
     long startTime = 0;
@@ -92,10 +97,6 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         // perspective x lookat
         Matrix.multiplyMM(mMtrxProjectionAndView, 0, mCamera.projectionMatrix, 0, mCamera.viewMatrix, 0);
         Matrix.multiplyMM(mMtrxOrthoAndView, 0, mCamera.orthoProjectionMatrix, 0, mCamera.twoDViewMatrix, 0);
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "color_R"), 0.0f);
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "color_G"), 0.0f);
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "color_B"), 0.0f);
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "color_A"), 0.0f);
     }
     // 서피스뷰 생성
     public void onSurfaceCreated(GL10 gl, EGLConfig config){
@@ -117,10 +118,6 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         for(int i = 0 ; i < ConstMgr.INTROBUTTON_NUM ; i++) {
             mIntroButtons[i] = new Button(mProgramImage, mProgramSolidColor, this);
         }
-        mStageButtons = new Button[ConstMgr.STAGEBUTTON_NUM];
-        for(int i = 0 ; i < ConstMgr.STAGEBUTTON_NUM ; i++) {
-            mStageButtons[i] = new Button(mProgramImage, mProgramSolidColor, this);
-        }
         //initialize mesh
         mMissile = new Mesh(mProgramImage, mActivity);
         mMissile.loadOBJ("missile");
@@ -132,7 +129,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mCamera.setEye(0f, 250f, 0f);
         mCamera.setAt(0f, 0f, 0f);
         mCamera.setUp(0f, 0f, 1f);
-        mCamera.setViewBox((float) Math.PI / 3.0f, (float) mDeviceWidth / (float) mDeviceHeight, 1.0f, 100000.0f);
+        mCamera.setViewBox((float) Math.PI/3, (float) mDeviceWidth / (float) mDeviceHeight, 1.0f, 100000.0f);
         mCamera.setViewMatrix();
         mCamera.setTwoDViewMatrix();
         mCamera.setProjectionMatrix();
@@ -165,11 +162,20 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             mIntroButtons[i].setPos(mScreenConfig.getmVirtualWidth() / 2, mScreenConfig.getmVirtualHeight() / 2 - i * mScreenConfig.getmVirtualHeight()*3/10);
         }
         //stage 화면
+        mStageButtons = new Button[ConstMgr.STAGEBUTTON_NUM];
+        for(int i = 0 ; i < ConstMgr.STAGEBUTTON_NUM ; i++) {
+            mStageButtons[i] = new Button(mProgramImage, mProgramSolidColor, this);
+        }
+        for(int i = 0 ; i < ConstMgr.STAGEBUTTON_NUM ; i++) {
+            mStageButtons[i].setBitmap(mBitmapLoader.getImageHandle("drawable/stage"+i, false),mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
+            mStageButtons[i].setPos(mScreenConfig.getmVirtualHeight() / 6 + i * mScreenConfig.getmVirtualHeight() / 5, 4 * mScreenConfig.getmVirtualHeight() / 6);
+            mStageButtons[i].setIsActive(true);
+        }
         mStageScreen.setBitmap(mBitmapLoader.getImageHandle("drawable/stagescreen", false), mScreenConfig.getmVirtualWidth(), mScreenConfig.getmVirtualHeight());
         mStageScreen.setPos(mScreenConfig.getmVirtualWidth() / 2, mScreenConfig.getmVirtualHeight() / 2);
         mStageScreen.setIsActive(true);
         //buttons
-        mBackButton.setBitmap(mBitmapLoader.getImageHandle("drawable/back2", false), mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
+        mBackButton.setBitmap(mBitmapLoader.getImageHandle("drawable/button3", false), mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
         mBackButton.setPos(mScreenConfig.getmVirtualWidth() - mScreenConfig.getmVirtualHeight() / 12, 11 * mScreenConfig.getmVirtualHeight() / 12);
         mBackButton.setIsActive(true);
         //missile select button
@@ -186,25 +192,38 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             mModeButton[i].setPos(mScreenConfig.getmVirtualWidth() - mScreenConfig.getmVirtualHeight() / 12 - i * mScreenConfig.getmVirtualHeight() / 6 , 11 * mScreenConfig.getmVirtualHeight() / 12);
             mModeButton[i].setIsActive(true);
         }
-        mModeButton[0].setBitmap(mBitmapLoader.getImageHandle("drawable/aim", false), mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
-        mModeButton[1].setBitmap(mBitmapLoader.getImageHandle("drawable/eye", false), mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
-        for(int i = 0 ; i < ConstMgr.STAGEBUTTON_NUM ; i++) {
-            mStageButtons[i].setBitmap(mBitmapLoader.getImageHandle("drawable/stage", false),mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
-            mStageButtons[i].setPos(mScreenConfig.getmVirtualHeight() / 6 + i * mScreenConfig.getmVirtualHeight() / 6, 4 * mScreenConfig.getmVirtualHeight() / 6);
-            mStageButtons[i].setIsActive(true);
-        }
+        mModeButton[0].setBitmap(mBitmapLoader.getImageHandle("drawable/button5", false), mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
+        mModeButton[1].setBitmap(mBitmapLoader.getImageHandle("drawable/button6", false), mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
+
         mShootButton = new Button(mProgramImage, mProgramSolidColor, this);
         mShootButton.setBitmap(mBitmapLoader.getImageHandle("drawable/launch", false), mScreenConfig.getmVirtualWidth() / 6, mScreenConfig.getmVirtualWidth() / 6);
         mShootButton.setPos(mScreenConfig.getmVirtualWidth() * 11 / 12, mScreenConfig.getmVirtualWidth() / 12);
         mShootButton.setIsActive(true);
-        //폰트
+        // 팝업
+        popupWindow = new Square(mProgramImage);
+        popupWindow.setBitmap(mBitmapLoader.getImageHandle("drawable/popup", false), mScreenConfig.getmVirtualWidth()*3/4, mScreenConfig.getmVirtualHeight()*3/4);
+        String[] popupStrs = {" ", "정말로 게임을 종료하시겠습니까?", "진행중인 게임을 포기하고 나가시겠습니까?","조준 되지 않은 미사일이 있습니다. 턴을 진행하시겠습니까?",
+        "게임에서 승리하셨습니다!", "패배하였습니다..."};
+        for(int i = 0 ; i < ConstMgr.POPUP_MODE_SIZE ; i++) {
+            popupStr[i] = new Square(mProgramImage);
+            popupStr[i].setBitmap(mBitmapLoader.getHangulHandle(popupStrs[i], mScreenConfig.getmVirtualHeight()/15, Color.WHITE, -1, 1.0f), (int)mBitmapLoader.getWordLength(), mScreenConfig.getmVirtualHeight()/15);
+        }
+        for(int i = 0 ; i < ConstMgr.POPUP_BUTTON_SIZE ; i++) {
+            popupBtns[i] = new Button(mProgramImage, mProgramSolidColor, this);
+            popupBtns[i].setBitmap(mBitmapLoader.getImageHandle("drawable/popup"+i, false),mScreenConfig.getmVirtualWidth()/5, (int)(mScreenConfig.getmVirtualWidth()/11.5));
+        }
 
+        mPopup = new Popup(this, popupWindow, popupStr, popupBtns, mScreenConfig.getmVirtualWidth(), mScreenConfig.getmVirtualHeight());
+        // 스카이 스피어
+        //spaceSphere = new Sphere(mProgramImage);
+        //spaceSphere.flip();
+        //spaceSphere.setBitmap(mBitmapLoader.getImageHandle("drawable/spacesphere", true), 1024, 512, 180);
         //행성 텍스쳐 로드
         planetTexureHandle[0] = mBitmapLoader.getImageHandle("drawable/earthmap", true);
         //유저 정보 로드
         Vector3f temp = new Vector3f();
         mUser = new Planet(mProgramImage, 0.0f, 0.1f, 0.2f, 1.0f, 1, 1, 0.0001f, 1.0f, temp);
-        mUser.setBitmap(planetTexureHandle[0], 1024, 512);
+        mUser.setBitmap(planetTexureHandle[0], 1024, 512, 36);
         temp.setXYZ(1.0f, 0.0f, 0.0f);
         mUser.addCannon(temp, 10, 0.015f, ConstMgr.MISSILE_STANDARD);
         temp.setXYZ(-1.0f, 0.0f, 0.0f);
@@ -225,7 +244,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                 mStage[stageNum].planetList[3] = new Planet(mProgramImage, 3.0f, 0.1f, 0.03f, 0.6f, 1, 1, 0.0001f, 1.0f, temp);
 
                 for(int i = 0 ; i < mStage[stageNum].listSize ; i ++) {
-                    mStage[stageNum].planetList[i].setBitmap(planetTexureHandle[0], 1024, 512);
+                    mStage[stageNum].planetList[i].setBitmap(planetTexureHandle[0], 1024, 512, 36);
                 }
                 mStage[stageNum].planetList[3].cannons[0].aim = new Aim(mProgramImage);
                 break;
@@ -234,9 +253,6 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     }
 
     public void update() {
-        if(ConstMgr.RENDER_MODE == ConstMgr.RENDER_ANIMATION) {
-            //update missile info
-        }
         // send light & material properties
         mLight.sendLight();
         mLight.sendMaterial();
@@ -248,12 +264,10 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             for(int k = 0 ; k < mStage[ConstMgr.STAGE].planetList[j].getCannonListSize(); k++) {
                 if(mStage[ConstMgr.STAGE].planetList[j].cannons[k].aim.getIsAimed()) {
                     mStage[ConstMgr.STAGE].planetList[j].cannons[k].missile.setIsActive(true);
-                    Log.e("","" + mStage[ConstMgr.STAGE].planetList[j].cannons[k].missile.getVelocity().x);
                     for (int i = 0; i < ConstMgr.FRAME_PER_TURN; i++) {
-                        mStage[ConstMgr.STAGE].planetList[j].cannons[k].missile.updateBuffer(i, mStage[ConstMgr.STAGE].planetList, mStage[ConstMgr.STAGE].listSize);
+                        if(mStage[ConstMgr.STAGE].planetList[j].cannons[k].missile.updateBuffer(i, mStage[ConstMgr.STAGE].planetList, mStage[ConstMgr.STAGE].listSize))
+                            break;
                         mStage[ConstMgr.STAGE].updatePosInList(ConstMgr.FRAME_PER_TURN * mStage[ConstMgr.STAGE].turn + i);
-                        Vector3f pos =new Vector3f();
-                        pos.copy(mStage[ConstMgr.STAGE].planetList[j].cannons[k].missile.positionBuffer[i]);
                     }
                     mStage[ConstMgr.STAGE].updatePosInList(ConstMgr.FRAME_PER_TURN * mStage[ConstMgr.STAGE].turn);
                 }
@@ -273,6 +287,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             for (int i = 0; i < mStage[ConstMgr.STAGE].planetList[j].getCannonListSize(); i++) {
                 mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[i].aim.setIsAimed(false);
                 mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[i].missile.setIsActive(false);
+                mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[i].missile.setLife(ConstMgr.MAX_AIM_VERTEXCOUNT);
             }
         }
     }
@@ -314,6 +329,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         for(int i = 0 ; i < ConstMgr.INTROBUTTON_NUM ; i++) {
             mIntroButtons[i].draw(orth);
         }
+        mPopup.draw(orth);
     }
     //스테이지 선택 화면
     private void RenderStage(float[] pv, float[] orth) {
@@ -326,6 +342,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         for(int i = 0 ; i < ConstMgr.STAGEBUTTON_NUM ; i++) {
             mStageButtons[i].draw(orth);
         }
+        mPopup.draw(orth);
     }
     //게임 화면
     private void RenderGame(float[] pv, float[] orth) {
@@ -336,6 +353,22 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 0);
         float[] tempMatrix = new float[16];
         Vector3f temp = new Vector3f();
+        //스카이 스피어
+        Matrix.setIdentityM(tempMatrix, 0);
+        Matrix.setIdentityM(mModelMatrix, 0);
+        Matrix.scaleM(tempMatrix, 0, 100, 100, 100);
+        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        //최종 P * V * M 매트릭스
+        Matrix.multiplyMM(mModelViewMatrix, 0, mCamera.viewMatrix, 0, mModelMatrix, 0);
+        Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
+        GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(mProgramImage, "modelViewMatrix"), 1, false, mModelViewMatrix, 0);
+        GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+        /*
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
+        spaceSphere.draw(mMVPMatrix);
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 0);
+        */
+
         //행성
         //model matrix 계산
         for( int i = 0 ; i < 4 ; i++ ) {
@@ -367,10 +400,10 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         //미사일
         if(ConstMgr.RENDER_MODE == ConstMgr.RENDER_ANIMATION) {
             int turnframe = mStage[ConstMgr.STAGE].currentFrame - mStage[ConstMgr.STAGE].turn * ConstMgr.FRAME_PER_TURN;
-            if (turnframe < ConstMgr.FRAME_PER_TURN / 10 * 8) {
+            if (turnframe < ConstMgr.FRAME_PER_TURN) {
                 for (int j = 0; j < mStage[ConstMgr.STAGE].listSize; j++) {
                     for (int i = 0; i < mStage[ConstMgr.STAGE].planetList[j].getCannonListSize(); i++) {
-                        if(mStage[ConstMgr.STAGE].planetList[j].cannons[i].missile.getIsActive()) {
+                        if(mStage[ConstMgr.STAGE].planetList[j].cannons[i].missile.getIsActive() && (turnframe < mStage[ConstMgr.STAGE].planetList[j].cannons[i].missile.getLife())) {
                             Matrix.setIdentityM(tempMatrix, 0);
                             Matrix.setIdentityM(mModelMatrix, 0);
                             Matrix.scaleM(tempMatrix, 0, 0.0001f, 0.0001f, 0.0001f);
@@ -393,6 +426,8 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                 }
             }
         }
+
+        GLES20.glDisable(GLES20.GL_DEPTH_TEST);
         // Render UI
         GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
         //buttons
@@ -403,17 +438,9 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                 mMissileButton[i].draw(orth);
             }
         }
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "color_R"), 0.5f);
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "color_G"), 0.5f);
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "color_B"), 0.5f);
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "color_A"), 0.0f);
         for(int i = 0 ; i < 2; i++) {
             mModeButton[i].draw(orth);
         }
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "color_R"), 0.0f);
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "color_G"), 0.0f);
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "color_B"), 0.0f);
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "color_A"), 0.0f);
         // 궤도
         if((ConstMgr.RENDER_MODE == ConstMgr.RENDER_SETTING) && (ConstMgr.TURN_MODE == ConstMgr.TURN_AIM)) {
             GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
@@ -424,6 +451,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             }
             GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 0);
         }
+        mPopup.draw(orth);
     }
 
     //터치 이벤트
@@ -446,10 +474,15 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             //인트로 화면 이벤트
             switch (action) {
                 case MotionEvent.ACTION_DOWN: {
-                    if(mIntroButtons[0].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
+                    if(mPopup.getIsActive()){
+                        if(mPopup.isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
+                            mPopup.setIsActive(false);
+                        }
+                    }else if(mIntroButtons[0].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
                         ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_STAGE;
                     }else if(mIntroButtons[1].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
-                        //정말 종료하시겠습니까? 팝업창
+                        mPopup.setMode(ConstMgr.POPUP_MODE_EXIT_APP);
+                        mPopup.setIsActive(true);
                     }
                 }
             }
@@ -696,5 +729,38 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             result.setXYZ(mCamera.eye[0] + ray_wor.x * (-b / c), mCamera.eye[1] + ray_wor.y * (-b / c), mCamera.eye[2] + ray_wor.z * (-b / c));
         }
         return result;
+    }
+
+    public void onPopupResponse(int mode, int response) {
+        if(mode == ConstMgr.POPUP_MODE_EXIT_APP) {
+            if(response == ConstMgr.POPUP_RES_YES) {
+                mPopup.setIsActive(false);
+                mActivity.moveTaskToBack(true);
+                mActivity.finish();
+                android.os.Process.killProcess(android.os.Process.myPid());
+            }else if(response == ConstMgr.POPUP_RES_NO) {
+                mPopup.setIsActive(false);
+            }
+        } else if (mode == ConstMgr.POPUP_MODE_EXIT_GAME) {
+            if(response == ConstMgr.POPUP_RES_YES) {
+                mPopup.setIsActive(false);
+                ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_STAGE;
+            }else if(response == ConstMgr.POPUP_RES_NO) {
+                mPopup.setIsActive(false);
+            }
+        } else if (mode == ConstMgr.POPUP_MODE_AIM) {
+            if(response == ConstMgr.POPUP_RES_YES) {
+                mPopup.setIsActive(false);
+            }else if(response == ConstMgr.POPUP_RES_NO) {
+                mPopup.setIsActive(false);
+            }
+        } else if (mode == ConstMgr.POPUP_MODE_WIN) {
+            mPopup.setIsActive(false);
+            ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_STAGE;
+        } else if (mode == ConstMgr.POPUP_MODE_LOSE) {
+            mPopup.setIsActive(false);
+            ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_STAGE;
+        }
+
     }
 }

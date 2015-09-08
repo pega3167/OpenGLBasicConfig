@@ -1,6 +1,5 @@
 package openglbasicconfig.leesg.com.openglbasicconfig;
 
-import android.util.Log;
 
 /**
  * Created by LeeSG on 2015-09-01.
@@ -45,7 +44,7 @@ public class Vector3f {
     }
 
     public Vector3f multM(float[] m, float w) {
-        float X, Y, Z, W;
+        float X, Y, Z;
         X = m[0]*this.x + m[4]*this.y + m[8]*this.z + m[12]*w;
         Y = m[1]*this.x + m[5]*this.y + m[9]*this.z + m[13]*w;
         Z = m[2]*this.x + m[6]*this.y + m[10]*this.z + m[14]*w;

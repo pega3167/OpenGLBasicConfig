@@ -14,7 +14,7 @@ public class ConstMgr {
     //쉴드등등 추가
     //버튼수
     public final static int INTROBUTTON_NUM = 2;
-    public final static int STAGEBUTTON_NUM = 5;
+    public final static int STAGEBUTTON_NUM = 1;
     //현재 화면의 모드
     public static int SCREEN_MODE = SCREEN_INTRO;
     // Frame Per Second
@@ -41,4 +41,20 @@ public class ConstMgr {
     public final static int CANNON_FIVE = 4;
     public final static int CANNON_NOTHING = 5;
     public static int CANNON = CANNON_NOTHING;
+
+    // 팝업
+    public final static int POPUP_MODE_NONE = 0;
+    public final static int POPUP_MODE_EXIT_APP = 1;
+    public final static int POPUP_MODE_EXIT_GAME = 2;
+    public final static int POPUP_MODE_AIM = 3;
+    public final static int POPUP_MODE_WIN = 4;
+    public final static int POPUP_MODE_LOSE = 5;
+    public final static int POPUP_MODE_SIZE = 6;
+    public static int POPUP_MODE = POPUP_MODE_NONE;
+
+    public final static int POPUP_RES_YES = 0;
+    public final static int POPUP_RES_NO = 1;
+    public final static int POPUP_RES_CONFIRM = 2;
+    public final static int POPUP_RES_CANCLE = 3;
+    public final static int POPUP_BUTTON_SIZE = 4;
 }

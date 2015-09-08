@@ -1,15 +1,12 @@
 package openglbasicconfig.leesg.com.openglbasicconfig;
 
-import android.app.Activity;
+
 import android.opengl.GLES20;
 import java.io.BufferedReader;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Vector;
 
 /**

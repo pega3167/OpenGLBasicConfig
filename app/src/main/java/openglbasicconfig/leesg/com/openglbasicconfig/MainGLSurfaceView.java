@@ -1,6 +1,6 @@
 package openglbasicconfig.leesg.com.openglbasicconfig;
 
-import android.content.Context;
+
 import android.opengl.GLSurfaceView;
 import android.view.MotionEvent;
 

@@ -26,7 +26,7 @@ uniform float color_A;
 
     void main() {
         if(bUI) {
-            gl_FragColor = bAim? vec4(1,1,1,1) + vec4(color_R, color_G, color_B, color_A): texture2D(TEX, tc) + vec4(color_R, color_G, color_B, color_A);
+            gl_FragColor = bAim? vec4(1,1,1,1): texture2D(TEX, tc);
         } else {
             vec4 lPos = viewMatrix*lightPosition;	// light position in the eye-space coordinate
             vec3 n = normalize(norm);	// norm interpolated via rasterizer should be normalized again here

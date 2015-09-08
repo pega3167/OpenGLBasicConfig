@@ -10,7 +10,7 @@ public class Missile {
     private Vector3f velocity;
     private float angle;
     private boolean isActive = false;
-    private int life = ConstMgr.FRAME_PER_TURN / 10 * 8;
+    private int life = ConstMgr.MAX_AIM_VERTEXCOUNT;
     public float[] angleBuffer = new float[ConstMgr.FRAME_PER_TURN];
     public Vector3f[] positionBuffer = new Vector3f[ConstMgr.FRAME_PER_TURN];
     // + 수명, 활성화여부 만들어야함
@@ -25,14 +25,22 @@ public class Missile {
             positionBuffer[i] = new Vector3f();
         }
     }
-    public void updateBuffer(int index, Planet[] planetList, int listSize) {
+    public boolean updateBuffer(int index, Planet[] planetList, int listSize) {
         this.positionBuffer[index].copy(currentPos);
         this.angleBuffer[index] = angle;
-        this.updateVelocity(planetList, listSize);
+        if(this.updateVelocity(planetList, listSize) && index > 10) {
+            this.life = index;
+            Log.e("",""+this.life);
+            this.updateCurrentPos();
+            this.updateAngle();
+            return true;
+        }
         this.updateCurrentPos();
         this.updateAngle();
+        return false;
         //Log.e("", "" + velocity.x+","+velocity.y+","+velocity.z);
     }
+
     // 변수 설정 함수
     public void setCurrentPos(Vector3f pos) {
         this.currentPos.x = pos.x;
@@ -61,19 +69,30 @@ public class Missile {
 
     public void setAngle(float angle) { this.angle = angle; }
 
+    public void setLife(int life) {
+        this.life = life;
+    }
+
     // get함수
     public Vector3f getCurrentPos() { return this.currentPos; }
     public Vector3f getVelocity() { return this.velocity; }
     public float getAngle() { return angle; }
     public boolean getIsActive() { return this.isActive; }
 
+    public int getLife() {
+        return life;
+    }
+
     // 업데이트 함수
-    public void updateVelocity(Planet[] planetList, int listSize) {
+    public boolean updateVelocity(Planet[] planetList, int listSize) {
         float r;
         float a;
         Vector3f direction = new Vector3f();
         for(int i = 0 ; i < listSize ; i++) {
             r = this.currentPos.distance( planetList[i].getCurrentPos() );
+            if(r < planetList[i].getRadius()) {
+                return true;
+            }
             if( r < planetList[i].getGravityField() ) {
                 a = planetList[i].getGravity() / r*r;
                 direction.x = (planetList[i].getCurrentPos().x - this.currentPos.x) / r * a;
@@ -84,6 +103,7 @@ public class Missile {
                 velocity.z += direction.z;
             }
         }
+        return false;
     }
     public void updateCurrentPos() {
         this.currentPos.x += this.velocity.x;

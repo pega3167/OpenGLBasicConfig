@@ -30,6 +30,7 @@ public class BitmapLoader {
             bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), flip, true);
         }
         imageHandle = getImageHandle(bitmap);
+        bitmap.recycle();
         return imageHandle;
     }
 
@@ -37,6 +38,7 @@ public class BitmapLoader {
         bitmap = Bitmap.createBitmap(textSize * text.length(), textSize, Bitmap.Config.ARGB_8888);
         wordLength = mHangulBitmap.GetBitmap(bitmap, text, textSize, fontColor, canvasColor, scale);
         imageHandle = getImageHandle(bitmap);
+        bitmap.recycle();
         return imageHandle;
     }
 

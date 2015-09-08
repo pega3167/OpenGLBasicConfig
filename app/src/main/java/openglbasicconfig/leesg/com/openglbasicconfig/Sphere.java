@@ -3,6 +3,7 @@ package openglbasicconfig.leesg.com.openglbasicconfig;
 import android.graphics.Bitmap;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
+import android.util.Log;
 
 
 import java.nio.ByteBuffer;
@@ -49,11 +50,11 @@ public class Sphere {
     }
 
     // 이미지 핸들, 가로, 세로 값을 받아와 설정
-    public void setBitmap(int handle, int width, int height) {
+    public void setBitmap(int handle, int width, int height, int slices) {
         mBitmapCount = 1;
         this.mWidth = width;
         this.mHeight = height;
-        setupBuffer(1.0f, 36, 36);
+        setupBuffer(1.0f, slices, slices);
         mHandleBitmap = handle;
     }
     // 버퍼 설정. 구의 vertexCoord, normalCoord, texCoord, indexOrder 를 계산하여 버퍼에 저장
@@ -118,11 +119,23 @@ public class Sphere {
         mTexCoordBuffer.position(0);
         mIndexBuffer.position(0);
     }
+
+    public void flip() {
+        short[] tempBuffer = new short[indexCount];
+        for(int i = 0 ; i < indexCount ; i++) {
+            tempBuffer[i] = mIndexBuffer.get(indexCount - i);
+            Log.e("", "" + tempBuffer[i]);
+        }
+        for(int i = 0 ; i < indexCount ; i++) {
+            mIndexBuffer.put(i, tempBuffer[i]);
+        }
+        //mIndexBuffer.position(0);
+    }
+
     //그리기
     public void draw(float[] m) {
         //Matrix.setIdentityM(m, 0);
         //GLES20.glLineWidth(10);
-        GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         GLES20.glEnableVertexAttribArray(mPositionHandle);
         GLES20.glVertexAttribPointer(mPositionHandle, COORDS_PER_VERTEX, GLES20.GL_FLOAT, false, 0, mVertexBuffer);
         GLES20.glEnableVertexAttribArray(mNormalLoc);
@@ -138,6 +151,5 @@ public class Sphere {
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, indexCount, GLES20.GL_UNSIGNED_SHORT, mIndexBuffer);
         GLES20.glDisableVertexAttribArray(mPositionHandle);
         GLES20.glDisableVertexAttribArray(mTexCoordLoc);
-        GLES20.glDisable(GLES20.GL_DEPTH_TEST);
     }
 }
