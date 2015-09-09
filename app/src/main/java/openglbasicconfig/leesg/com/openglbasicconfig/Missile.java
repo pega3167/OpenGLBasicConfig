@@ -13,8 +13,6 @@ public class Missile {
     private int life = ConstMgr.MAX_AIM_VERTEXCOUNT;
     public float[] angleBuffer = new float[ConstMgr.FRAME_PER_TURN];
     public Vector3f[] positionBuffer = new Vector3f[ConstMgr.FRAME_PER_TURN];
-    // + 수명, 활성화여부 만들어야함
-    // + 시뮬레이터
     //생성자
     public Missile() {
         currentPos = new Vector3f();
@@ -30,7 +28,6 @@ public class Missile {
         this.angleBuffer[index] = angle;
         if(this.updateVelocity(planetList, listSize) && index > 10) {
             this.life = index;
-            Log.e("",""+this.life);
             this.updateCurrentPos();
             this.updateAngle();
             return true;
@@ -38,7 +35,6 @@ public class Missile {
         this.updateCurrentPos();
         this.updateAngle();
         return false;
-        //Log.e("", "" + velocity.x+","+velocity.y+","+velocity.z);
     }
 
     // 변수 설정 함수

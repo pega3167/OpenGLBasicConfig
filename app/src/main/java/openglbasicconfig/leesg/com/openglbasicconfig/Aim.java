@@ -1,7 +1,6 @@
 package openglbasicconfig.leesg.com.openglbasicconfig;
 
 import android.opengl.GLES20;
-import android.util.Log;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -85,7 +84,6 @@ public class Aim {
             currentPos.x += currentVelocity.x;
             currentPos.y += currentVelocity.y;
             currentPos.z += currentVelocity.z;
-            //Log.e("","" + currentPos.x + ", "+ currentPos.y + ", "+ currentPos.z);
             vertexBuffer.put(3*i, currentPos.x);
             vertexBuffer.put(3*i+1, currentPos.y);
             vertexBuffer.put(3 * i + 2, currentPos.z);

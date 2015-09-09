@@ -202,6 +202,9 @@ public class ESShader
         GLES20.glDeleteShader ( vertexShader );
         GLES20.glDeleteShader(fragmentShader);
 
+        if(programObject == 0) {
+            Log.e("ESShader", "Failed loading shaders");
+        }
         return programObject;
     }
 

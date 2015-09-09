@@ -58,12 +58,15 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     Mesh mMissile;
     Planet mUser;
     // planet texture
-    int planetTexureHandle[] = new int[1];
+    int planetTexureHandle[] = new int[2];
     // Stage
     Stage mStage[] = new Stage[1];
     // frame
     int frame = 0;
     long startTime = 0;
+    // Flag
+    private boolean mIsFirstCalled = true;
+    private boolean mIsDraw = false;
     //missile List
 
     //생성자
@@ -103,39 +106,51 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mScreenConfig = new ScreenConfig(mDeviceWidth, mDeviceHeight);
         mScreenConfig.setSize(1280, 720);
         mProgramImage = ESShader.loadProgramFromAsset(mContext,"shaders/shader.vert","shaders/shader.frag");
-        if(mProgramImage == 0) {
-            Log.e("","Failed loading shaders");
-        }
         GLES20.glUseProgram(mProgramImage);
-        //initialize font
-
-        //initialize screen
-        mIntroScreen = new Square(mProgramImage);
-        mStageScreen = new Square(mProgramImage);
-        //initialize buttons
-        mBackButton = new Button(mProgramImage, mProgramSolidColor, this);
-        mIntroButtons = new Button[ConstMgr.INTROBUTTON_NUM];
-        for(int i = 0 ; i < ConstMgr.INTROBUTTON_NUM ; i++) {
-            mIntroButtons[i] = new Button(mProgramImage, mProgramSolidColor, this);
+        // 처음에만 초기화하고 인터럽트 발생 후에는 텍스쳐만 바인드 한다.
+        if (mIsFirstCalled) {
+            init();
+        } else {
+            recoverResource();
         }
-        //initialize mesh
-        mMissile = new Mesh(mProgramImage, mActivity);
-        mMissile.loadOBJ("missile");
-        mMissile.setBitmap(mBitmapLoader.getImageHandle("drawable/missilesample", true));
+        mIsFirstCalled = false;
+    }
 
-
+    private void init() {
+        initResourceLoader();
+        initPlanetResource();
+        initObject();
+        initUser();
+        initStage();
+        initIntroScreen();
+        initStageScreen();
+        initGameScreen();
+        initPopup();
+    }
+    private void initResourceLoader() {
+        mHangulBitmap = new HangulBitmap(mActivity);
+        mBitmapLoader = new BitmapLoader(mContext, mHangulBitmap);
+    }
+    private void initPlanetResource() {
+        planetTexureHandle[0] = mBitmapLoader.getImageHandle("drawable/earthmap", true);
+        planetTexureHandle[1] = mBitmapLoader.getImageHandle("drawable/th_sun", true);
+    }
+    private void initObject() {
+        mIsDraw = false;
         //initialize camera
         mCamera = new Camera();
         mCamera.setEye(0f, 250f, 0f);
         mCamera.setAt(0f, 0f, 0f);
         mCamera.setUp(0f, 0f, 1f);
-        mCamera.setViewBox((float) Math.PI/3, (float) mDeviceWidth / (float) mDeviceHeight, 1.0f, 100000.0f);
+        mCamera.setViewBox((float) Math.PI / 3, (float) mDeviceWidth / (float) mDeviceHeight, 1.0f, 100000.0f);
         mCamera.setViewMatrix();
         mCamera.setTwoDViewMatrix();
         mCamera.setProjectionMatrix();
         mCamera.setOrthoProjectionMatrix(mScreenConfig.mVirtualWidth, mScreenConfig.mVirtualHeight);
-        // orthoperspective x lookat
+        // perspective x lookat
+        Matrix.multiplyMM(mMtrxProjectionAndView, 0, mCamera.projectionMatrix, 0, mCamera.viewMatrix, 0);
         Matrix.multiplyMM(mMtrxOrthoAndView, 0, mCamera.orthoProjectionMatrix, 0, mCamera.twoDViewMatrix, 0);
+        GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(mProgramImage, "viewMatrix"), 1, false, mCamera.viewMatrix, 0);
         //initialize light
         mLight = new Light(mProgramImage);
         mLight.setPosition(0.0f, 0.0f, 0.0f, 1.0f);
@@ -149,40 +164,70 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mLight.setShininess(10);
         mLight.sendLight();
         mLight.sendMaterial();
-        //bit map loader initialize
-
-        //intro 화면
-        mIntroScreen.setBitmap(mBitmapLoader.getImageHandle("drawable/intro", false), mScreenConfig.getmVirtualWidth(), mScreenConfig.getmVirtualHeight());
+        //initialize mesh
+        mMissile = new Mesh(mProgramImage, mActivity);
+        mMissile.loadOBJ("missile");
+        setResourceObject();
+    }
+    private void initUser() {
+        //유저 정보 로드
+        Vector3f temp = new Vector3f();
+        mUser = new Planet(mProgramImage, 0.0f, 0.1f, 0.2f, 1.0f, 1, 1, 0.0001f, 1.0f, temp);
+        temp.setXYZ(1.0f, 0.0f, 0.0f);
+        mUser.addCannon(temp, 10, 0.015f, ConstMgr.MISSILE_STANDARD);
+        temp.setXYZ(-1.0f, 0.0f, 0.0f);
+        mUser.addCannon(temp, 10, 0.015f, ConstMgr.MISSILE_STANDARD);
+        setResourceUser();
+    }
+    private void initStage() {
+        Vector3f temp = new Vector3f();
+        temp.setXYZ(0, 0, 0);
+        mStage[0] = new Stage(mProgramImage, 4, 3);
+        mStage[0].planetList[0] = new Planet(mProgramImage, 0.0f, 0.5f, 0.0f, 0.0f, 1, 1, 0.0001f, 1.0f, temp);
+        mStage[0].planetList[1] = new Planet(mProgramImage, 1.0f, 0.1f, 0.2f, 0.1f, 1, 1, 0.0001f, 1.0f, temp);
+        mStage[0].planetList[2] = new Planet(mProgramImage, 2.0f, 0.1f, 0.1f, 1.3f, 1, 1, 0.0001f, 1.0f, temp);
+        mStage[0].planetList[3] = new Planet(mProgramImage, 3.0f, 0.1f, 0.03f, 0.6f, 1, 1, 0.0001f, 1.0f, temp);
+        setResourceStage();
+    }
+    private void initIntroScreen() {
+        //initialize screen
+        mIntroScreen = new Square(mProgramImage);
         mIntroScreen.setPos(mScreenConfig.getmVirtualWidth() / 2, mScreenConfig.getmVirtualHeight() / 2);
         mIntroScreen.setIsActive(true);
-        //buttons
-        for(int i = 0; i < ConstMgr.INTROBUTTON_NUM ; i++) {
-            mIntroButtons[i].setBitmap(mBitmapLoader.getImageHandle("drawable/button" + i, false), mScreenConfig.getmVirtualWidth() / 5, mScreenConfig.getmVirtualHeight() / 5);
-            mIntroButtons[i].setIsActive(true);
-            mIntroButtons[i].setPos(mScreenConfig.getmVirtualWidth() / 2, mScreenConfig.getmVirtualHeight() / 2 - i * mScreenConfig.getmVirtualHeight()*3/10);
+        //initioalize buttons
+        mIntroButtons = new Button[ConstMgr.INTROBUTTON_NUM];
+        for(int i = 0 ; i < ConstMgr.INTROBUTTON_NUM ; i++) {
+            mIntroButtons[i] = new Button(mProgramImage, mProgramSolidColor, this);
         }
-        //stage 화면
+        for(int i = 0; i < ConstMgr.INTROBUTTON_NUM ; i++) {
+            mIntroButtons[i].setPos(mScreenConfig.getmVirtualWidth() / 2, mScreenConfig.getmVirtualHeight() / 2 - i * mScreenConfig.getmVirtualHeight() * 3 / 10);
+            mIntroButtons[i].setIsActive(true);
+        }
+        setResourceIntroScreen();
+    }
+    private void initStageScreen() {
+        //initialize screen
+        mStageScreen = new Square(mProgramImage);
+        mStageScreen.setPos(mScreenConfig.getmVirtualWidth() / 2, mScreenConfig.getmVirtualHeight() / 2);
+        mStageScreen.setIsActive(true);
+        // initialize buttons
         mStageButtons = new Button[ConstMgr.STAGEBUTTON_NUM];
         for(int i = 0 ; i < ConstMgr.STAGEBUTTON_NUM ; i++) {
             mStageButtons[i] = new Button(mProgramImage, mProgramSolidColor, this);
-        }
-        for(int i = 0 ; i < ConstMgr.STAGEBUTTON_NUM ; i++) {
-            mStageButtons[i].setBitmap(mBitmapLoader.getImageHandle("drawable/stage"+i, false),mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
             mStageButtons[i].setPos(mScreenConfig.getmVirtualHeight() / 6 + i * mScreenConfig.getmVirtualHeight() / 5, 4 * mScreenConfig.getmVirtualHeight() / 6);
             mStageButtons[i].setIsActive(true);
         }
-        mStageScreen.setBitmap(mBitmapLoader.getImageHandle("drawable/stagescreen", false), mScreenConfig.getmVirtualWidth(), mScreenConfig.getmVirtualHeight());
-        mStageScreen.setPos(mScreenConfig.getmVirtualWidth() / 2, mScreenConfig.getmVirtualHeight() / 2);
-        mStageScreen.setIsActive(true);
-        //buttons
-        mBackButton.setBitmap(mBitmapLoader.getImageHandle("drawable/button3", false), mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
+        //back button
+        mBackButton = new Button(mProgramImage, mProgramSolidColor, this);
         mBackButton.setPos(mScreenConfig.getmVirtualWidth() - mScreenConfig.getmVirtualHeight() / 12, 11 * mScreenConfig.getmVirtualHeight() / 12);
         mBackButton.setIsActive(true);
+        setResourceStageScreen();
+    }
+    private void initGameScreen() {
         //missile select button
         mMissileButton = new Button[5];
         for ( int i = 0 ; i < 5 ; i++) {
             mMissileButton[i] = new Button(mProgramImage, mProgramSolidColor, this);
-            mMissileButton[i].setBitmap(mBitmapLoader.getImageHandle("drawable/missilebutton", false), mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
             mMissileButton[i].setPos(mScreenConfig.getmVirtualHeight() / 12, mScreenConfig.getmVirtualHeight() - mScreenConfig.getmVirtualHeight() / 4 - i * mScreenConfig.getmVirtualHeight() / 6);
             mMissileButton[i].setIsActive(false);
         }
@@ -192,74 +237,90 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             mModeButton[i].setPos(mScreenConfig.getmVirtualWidth() - mScreenConfig.getmVirtualHeight() / 12 - i * mScreenConfig.getmVirtualHeight() / 6 , 11 * mScreenConfig.getmVirtualHeight() / 12);
             mModeButton[i].setIsActive(true);
         }
-        mModeButton[0].setBitmap(mBitmapLoader.getImageHandle("drawable/button5", false), mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
-        mModeButton[1].setBitmap(mBitmapLoader.getImageHandle("drawable/button6", false), mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
-
         mShootButton = new Button(mProgramImage, mProgramSolidColor, this);
-        mShootButton.setBitmap(mBitmapLoader.getImageHandle("drawable/launch", false), mScreenConfig.getmVirtualWidth() / 6, mScreenConfig.getmVirtualWidth() / 6);
         mShootButton.setPos(mScreenConfig.getmVirtualWidth() * 11 / 12, mScreenConfig.getmVirtualWidth() / 12);
         mShootButton.setIsActive(true);
+        setResourceGameScreen();
+    }
+    private void initPopup() {
         // 팝업
         popupWindow = new Square(mProgramImage);
-        popupWindow.setBitmap(mBitmapLoader.getImageHandle("drawable/popup", false), mScreenConfig.getmVirtualWidth()*3/4, mScreenConfig.getmVirtualHeight()*3/4);
-        String[] popupStrs = {" ", "정말로 게임을 종료하시겠습니까?", "진행중인 게임을 포기하고 나가시겠습니까?","조준 되지 않은 미사일이 있습니다. 턴을 진행하시겠습니까?",
-        "게임에서 승리하셨습니다!", "패배하였습니다..."};
         for(int i = 0 ; i < ConstMgr.POPUP_MODE_SIZE ; i++) {
             popupStr[i] = new Square(mProgramImage);
-            popupStr[i].setBitmap(mBitmapLoader.getHangulHandle(popupStrs[i], mScreenConfig.getmVirtualHeight()/15, Color.WHITE, -1, 1.0f), (int)mBitmapLoader.getWordLength(), mScreenConfig.getmVirtualHeight()/15);
         }
         for(int i = 0 ; i < ConstMgr.POPUP_BUTTON_SIZE ; i++) {
             popupBtns[i] = new Button(mProgramImage, mProgramSolidColor, this);
-            popupBtns[i].setBitmap(mBitmapLoader.getImageHandle("drawable/popup"+i, false),mScreenConfig.getmVirtualWidth()/5, (int)(mScreenConfig.getmVirtualWidth()/11.5));
         }
-
         mPopup = new Popup(this, popupWindow, popupStr, popupBtns, mScreenConfig.getmVirtualWidth(), mScreenConfig.getmVirtualHeight());
-        // 스카이 스피어
-        //spaceSphere = new Sphere(mProgramImage);
-        //spaceSphere.flip();
-        //spaceSphere.setBitmap(mBitmapLoader.getImageHandle("drawable/spacesphere", true), 1024, 512, 180);
-        //행성 텍스쳐 로드
-        planetTexureHandle[0] = mBitmapLoader.getImageHandle("drawable/earthmap", true);
-        //유저 정보 로드
-        Vector3f temp = new Vector3f();
-        mUser = new Planet(mProgramImage, 0.0f, 0.1f, 0.2f, 1.0f, 1, 1, 0.0001f, 1.0f, temp);
-        mUser.setBitmap(planetTexureHandle[0], 1024, 512, 36);
-        temp.setXYZ(1.0f, 0.0f, 0.0f);
-        mUser.addCannon(temp, 10, 0.015f, ConstMgr.MISSILE_STANDARD);
-        temp.setXYZ(-1.0f, 0.0f, 0.0f);
-        mUser.addCannon(temp, 10, 0.015f, ConstMgr.MISSILE_STANDARD);
-        //스테이지 정보 로드
-        initStage(0);
+        setResourcePopup();
     }
 
-    public void initStage(int stageNum) {
-        Vector3f temp = new Vector3f();
-        temp.setXYZ(0, 0, 0);
-        switch(stageNum) {
-            case 0: {
-                mStage[stageNum] = new Stage(mProgramImage, 4, 3);
-                mStage[stageNum].planetList[0] = new Planet(mProgramImage, 0.0f, 0.5f, 0.0f, 0.0f, 1, 1, 0.0001f, 1.0f, temp);
-                mStage[stageNum].planetList[1] = new Planet(mProgramImage, 1.0f, 0.1f, 0.2f, 0.1f, 1, 1, 0.0001f, 1.0f, temp);
-                mStage[stageNum].planetList[2] = new Planet(mProgramImage, 2.0f, 0.1f, 0.1f, 1.3f, 1, 1, 0.0001f, 1.0f, temp);
-                mStage[stageNum].planetList[3] = new Planet(mProgramImage, 3.0f, 0.1f, 0.03f, 0.6f, 1, 1, 0.0001f, 1.0f, temp);
+    private void recoverResource() {
+        initResourceLoader();
+        initPlanetResource();
+        setResourceObject();
+        setResourceUser();
+        setResourceStage();
+        setResourceIntroScreen();
+        setResourceStageScreen();
+        setResourceGameScreen();
+        setResourcePopup();
+    }
+    private void setResourceObject() {
+        mMissile.setBitmap(mBitmapLoader.getImageHandle("drawable/missilesample", true));
+    }
+    private void setResourceUser() {
+        mUser.setBitmap(planetTexureHandle[0], 1024, 512, 36);
+    }
+    private void setResourceStage() {
+        mStage[0].planetList[0].setBitmap(planetTexureHandle[1], 1024, 512, 36);
+        mStage[0].planetList[1].setBitmap(planetTexureHandle[0], 1024, 512, 36);
+        mStage[0].planetList[2].setBitmap(planetTexureHandle[0], 1024, 512, 36);
+        mStage[0].planetList[3].setBitmap(planetTexureHandle[0], 1024, 512, 36);
+    }
+    private void setResourceIntroScreen() {
+        mIntroScreen.setBitmap(mBitmapLoader.getImageHandle("drawable/intro", false), mScreenConfig.getmVirtualWidth(), mScreenConfig.getmVirtualHeight());
+        for(int i = 0; i < ConstMgr.INTROBUTTON_NUM ; i++) {
+            mIntroButtons[i].setBitmap(mBitmapLoader.getImageHandle("drawable/button" + i, false), mScreenConfig.getmVirtualWidth() / 5, mScreenConfig.getmVirtualHeight() / 5);
+        }
+    }
+    private void setResourceStageScreen() {
+        mStageScreen.setBitmap(mBitmapLoader.getImageHandle("drawable/stagescreen", false), mScreenConfig.getmVirtualWidth(), mScreenConfig.getmVirtualHeight());
+        for(int i = 0 ; i < ConstMgr.STAGEBUTTON_NUM ; i++) {
+            mStageButtons[i].setBitmap(mBitmapLoader.getImageHandle("drawable/stage" + i, false), mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
+        }
+        mBackButton.setBitmap(mBitmapLoader.getImageHandle("drawable/button3", false), mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
 
-                for(int i = 0 ; i < mStage[stageNum].listSize ; i ++) {
-                    mStage[stageNum].planetList[i].setBitmap(planetTexureHandle[0], 1024, 512, 36);
-                }
-                mStage[stageNum].planetList[3].cannons[0].aim = new Aim(mProgramImage);
-                break;
-            }
+    }
+    private void setResourceGameScreen() {
+        for ( int i = 0 ; i < 5 ; i++) {
+            mMissileButton[i].setBitmap(mBitmapLoader.getImageHandle("drawable/missilebutton", false), mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
+        }
+        mModeButton[0].setBitmap(mBitmapLoader.getImageHandle("drawable/button5", false), mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
+        mModeButton[1].setBitmap(mBitmapLoader.getImageHandle("drawable/button6", false), mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
+        mShootButton.setBitmap(mBitmapLoader.getImageHandle("drawable/launch", false), mScreenConfig.getmVirtualWidth() / 6, mScreenConfig.getmVirtualWidth() / 6);
+    }
+    private void setResourcePopup() {
+        popupWindow.setBitmap(mBitmapLoader.getImageHandle("drawable/popup", false), mScreenConfig.getmVirtualWidth()*3/4, mScreenConfig.getmVirtualHeight()*3/4);
+        String[] popupStrs = {" ", "정말로 게임을 종료하시겠습니까?", "진행중인 게임을 포기하고 나가시겠습니까?","조준 되지 않은 미사일이 있습니다. 턴을 진행하시겠습니까?",
+                "게임에서 승리하셨습니다!", "패배하였습니다..."};
+        for(int i = 0 ; i < ConstMgr.POPUP_MODE_SIZE ; i++) {
+            popupStr[i].setBitmap(mBitmapLoader.getHangulHandle(popupStrs[i], mScreenConfig.getmVirtualHeight()/15, Color.WHITE, -1, 1.0f), (int)mBitmapLoader.getWordLength(), mScreenConfig.getmVirtualHeight()/15);
+        }
+        for(int i = 0 ; i < ConstMgr.POPUP_BUTTON_SIZE ; i++) {
+            popupBtns[i].setBitmap(mBitmapLoader.getImageHandle("drawable/popup" + i, false),mScreenConfig.getmVirtualWidth()/5, (int)(mScreenConfig.getmVirtualWidth()/11.5));
         }
     }
 
-    public void update() {
+    // 모든 프레임에 항상 하는일(턴중 + 시뮬레이션중)
+    private void update() {
         // send light & material properties
         mLight.sendLight();
         mLight.sendMaterial();
         GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(mProgramImage, "viewMatrix"), 1, false, mCamera.viewMatrix, 0);
     }
-
-    public void beforeSimul() {
+    // 시뮬레이션 전에 하는일
+    private void beforeSimul() {
         for(int j = 0 ; j < mStage[ConstMgr.STAGE].listSize ; j++) {
             for(int k = 0 ; k < mStage[ConstMgr.STAGE].planetList[j].getCannonListSize(); k++) {
                 if(mStage[ConstMgr.STAGE].planetList[j].cannons[k].aim.getIsAimed()) {
@@ -274,7 +335,8 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             }
         }
     }
-    public void afterSimul() {
+    // 시뮬레이션 후에 하는일
+    private void afterSimul() {
         mStage[ConstMgr.STAGE].turn += 1;
         mStage[ConstMgr.STAGE].currentFrame = (ConstMgr.FRAME_PER_TURN * mStage[ConstMgr.STAGE].turn );
         ConstMgr.RENDER_MODE = ConstMgr.RENDER_SETTING;
