@@ -41,6 +41,8 @@ public class ConstMgr {
     public final static int CANNON_FIVE = 4;
     public final static int CANNON_NOTHING = 5;
     public static int CANNON = CANNON_NOTHING;
+    // 파티클 시스템 파티클 수명
+    public final static int PARTICLE_LIFE = FPS*2;
 
     // 팝업
     public final static int POPUP_MODE_NONE = 0;

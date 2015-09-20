@@ -65,6 +65,11 @@ public class Vector3f {
         this.y = v.y;
         this.z = v.z;
     }
+    public void copy(float x, float y, float z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
 
     public float dot(Vector3f v){
         return x*v.x + y*v.y + z*v.z;

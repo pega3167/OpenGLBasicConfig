@@ -27,6 +27,7 @@ public class Aim {
     // 초기값
     private Vector3f shootPos;
     private Vector3f shootVelocity;
+    // 버퍼 업데이트를 위한 값
     private Vector3f currentVelocity;
     private boolean isAimed;
 

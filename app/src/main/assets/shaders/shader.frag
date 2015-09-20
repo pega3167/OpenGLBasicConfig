@@ -5,6 +5,8 @@ precision mediump float;
 varying vec4 ecPos;
 varying vec3 norm;
 varying vec2 tc;
+varying vec3 v_color;
+varying float alpha;
 
 // light properties
 uniform vec4 lightPosition, Ia, Id, Is;
@@ -14,6 +16,7 @@ uniform vec4	Ka, Kd, Ks;
 uniform float	shininess;
 uniform bool bUI;
 uniform bool bAim;
+uniform bool bPS;
 uniform sampler2D TEX;
 
 uniform mat4 viewMatrix;
@@ -27,6 +30,9 @@ uniform float color_A;
     void main() {
         if(bUI) {
             gl_FragColor = bAim? vec4(1,1,1,1): texture2D(TEX, tc);
+        } else if (bPS) {
+            vec4 tex = texture2D(TEX, gl_PointCoord);
+            gl_FragColor = vec4(v_color, alpha) * tex;
         } else {
             vec4 lPos = viewMatrix*lightPosition;	// light position in the eye-space coordinate
             vec3 n = normalize(norm);	// norm interpolated via rasterizer should be normalized again here

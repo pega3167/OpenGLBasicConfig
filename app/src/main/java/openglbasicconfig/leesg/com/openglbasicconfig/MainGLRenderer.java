@@ -57,6 +57,9 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     //3D 오브젝트
     Mesh mMissile;
     Planet mUser;
+    // 파티클 시스템
+    ParticleSystem mParticleSystem;
+    int particleTextureHandle[] = new int[1];
     // planet texture
     int planetTexureHandle[] = new int[2];
     // Stage
@@ -164,6 +167,8 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mLight.setShininess(10);
         mLight.sendLight();
         mLight.sendMaterial();
+        // 파티클 시스템 초기화
+        mParticleSystem = new ParticleSystem(mProgramImage);
         //initialize mesh
         mMissile = new Mesh(mProgramImage, mActivity);
         mMissile.loadOBJ("missile");
@@ -268,6 +273,8 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     }
     private void setResourceObject() {
         mMissile.setBitmap(mBitmapLoader.getImageHandle("drawable/missilesample", true));
+        //particleTextureHandle[0] = mBitmapLoader.getImageHandle("drawable/particle", true);
+        mParticleSystem.setBitmap(mBitmapLoader.getImageHandle("drawable/particle", true));
     }
     private void setResourceUser() {
         mUser.setBitmap(planetTexureHandle[0], 1024, 512, 36);
@@ -301,7 +308,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mShootButton.setBitmap(mBitmapLoader.getImageHandle("drawable/launch", false), mScreenConfig.getmVirtualWidth() / 6, mScreenConfig.getmVirtualWidth() / 6);
     }
     private void setResourcePopup() {
-        popupWindow.setBitmap(mBitmapLoader.getImageHandle("drawable/popup", false), mScreenConfig.getmVirtualWidth()*3/4, mScreenConfig.getmVirtualHeight()*3/4);
+        popupWindow.setBitmap(mBitmapLoader.getImageHandle("drawable/popup", false), mScreenConfig.getmVirtualWidth() * 3 / 4, mScreenConfig.getmVirtualHeight() * 3 / 4);
         String[] popupStrs = {" ", "정말로 게임을 종료하시겠습니까?", "진행중인 게임을 포기하고 나가시겠습니까?","조준 되지 않은 미사일이 있습니다. 턴을 진행하시겠습니까?",
                 "게임에서 승리하셨습니다!", "패배하였습니다..."};
         for(int i = 0 ; i < ConstMgr.POPUP_MODE_SIZE ; i++) {
@@ -362,6 +369,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         long elapsed = now - mLastTime;
         int tempFrame = frame;
         frame = (int)((mLastTime - startTime) * ConstMgr.FPS / 1000);
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "frame"), frame);
         if(ConstMgr.RENDER_MODE == ConstMgr.RENDER_ANIMATION) {
             mStage[ConstMgr.STAGE].currentFrame = frame - mStage[ConstMgr.STAGE].turnStartFrame;
             if (mStage[ConstMgr.STAGE].currentFrame > ConstMgr.FRAME_PER_TURN) {
@@ -378,6 +386,9 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_GAME) {
             if (frame != tempFrame) { update(); }
             RenderGame(mMtrxProjectionAndView, mMtrxOrthoAndView);
+        } else if (ConstMgr.SCREEN_MODE == 4) {
+            if (frame != tempFrame) {update();}
+            RenderTest(mMtrxProjectionAndView, mMtrxOrthoAndView);
         }
         mLastTime = now;
     }
@@ -516,6 +527,19 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mPopup.draw(orth);
     }
 
+    private void RenderTest(float[] pv, float[] orth) {
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        Vector3f color = new Vector3f(1, 1, 1);
+        mParticleSystem.addParticle(frame, ConstMgr.PARTICLE_LIFE, color);
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "life"), ConstMgr.PARTICLE_LIFE);
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 0);
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bPS"), 1);
+        mParticleSystem.draw(pv);
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bPS"), 0);
+    }
+
     //터치 이벤트
     float x1= 1.f;
     float x2= 1.f;
@@ -567,7 +591,10 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                         }
                     }
                     if(mBackButton.isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
-                        ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_INTRO;
+                        Vector3f pos = new Vector3f(0,0,0);
+                        mParticleSystem.addEmitter(pos, pos);
+                        startTime = mLastTime;
+                        ConstMgr.SCREEN_MODE = 4;
                     }
                 }
             }
@@ -824,5 +851,37 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_STAGE;
         }
 
+    }
+    boolean inverse(float[] matrix) {
+        float _11, _12, _13, _14, _21, _22, _23, _24, _31, _32, _33, _34, _41, _42, _43, _44;
+        _11 = matrix[0];        _12 = matrix[1];        _13 = matrix[2];        _14 = matrix[3];
+        _21 = matrix[4];        _22 = matrix[5];        _23 = matrix[6];        _24 = matrix[7];
+        _31 = matrix[8];        _32 = matrix[9];        _33 = matrix[10];        _34 = matrix[11];
+        _41 = matrix[12];        _42 = matrix[13];        _43 = matrix[14];        _44 = matrix[15];
+        float det;
+        det = _11*_22*_33*_44 + _11*_23*_34*_42 + _11*_24*_32*_43 + _12*_21*_34*_43
+                + _12*_23*_31*_44 + _12*_24*_33*_41	+ _13*_21*_32*_44 + _13*_22*_34*_41
+                + _13*_24*_31*_42 + _14*_21*_33*_42 + _14*_22*_31*_43 + _14*_23*_32*_41
+                - _11*_22*_34*_43 - _11*_23*_32*_44 - _11*_24*_33*_42 - _12*_21*_33*_44
+                - _12*_23*_34*_41 - _12*_24*_31*_43	- _13*_21*_34*_42 - _13*_22*_31*_44
+                - _13*_24*_32*_41 - _14*_21*_32*_43 - _14*_22*_33*_41 - _14*_23*_31*_42;
+        if(det == 0) return false;
+        matrix[0] = (_22*_33*_44 + _23*_34*_42 + _24*_32*_43 - _22*_34*_43 - _23*_32*_44 - _24*_33*_42)/det;
+        matrix[1] = (_12*_34*_43 + _13*_32*_44 + _14*_33*_42 - _12*_33*_44 - _13*_34*_42 - _14*_32*_43)/det;
+        matrix[2] = (_12*_23*_44 + _13*_24*_42 + _14*_22*_43 - _12*_24*_43 - _13*_22*_44 - _14*_23*_42)/det;
+        matrix[3] = (_12*_24*_33 + _13*_22*_34 + _14*_23*_32 - _12*_23*_34 - _13*_24*_32 - _14*_22*_33)/det;
+        matrix[4] = (_21*_34*_43 + _23*_31*_44 + _24*_33*_41 - _21*_33*_44 - _23*_34*_41 - _24*_31*_43)/det;
+        matrix[5] = (_11*_33*_44 + _13*_34*_41 + _14*_31*_43 - _11*_34*_43 - _13*_31*_44 - _14*_33*_41)/det;
+        matrix[6] = (_11*_24*_43 + _13*_21*_44 + _14*_23*_41 - _11*_23*_44 - _13*_24*_41 - _14*_21*_43)/det;
+        matrix[7] = (_11*_23*_34 + _13*_24*_31 + _14*_21*_33 - _11*_24*_33 - _13*_21*_34 - _14*_23*_31)/det;
+        matrix[8] = (_21*_32*_44 + _22*_34*_41 + _24*_31*_42 - _21*_34*_42 - _22*_31*_44 - _24*_32*_41)/det;
+        matrix[9] = (_11*_34*_42 + _12*_31*_44 + _14*_32*_41 - _11*_32*_44 - _12*_34*_41 - _14*_31*_42)/det;
+        matrix[10] = (_11*_22*_44 + _12*_24*_41 + _14*_21*_42 - _11*_24*_42 - _12*_21*_44 - _14*_22*_41)/det;
+        matrix[11] = (_11*_24*_32 + _12*_21*_34 + _14*_22*_31 - _11*_22*_34 - _12*_24*_31 - _14*_21*_32)/det;
+        matrix[12] = (_21*_33*_42 + _22*_31*_43 + _23*_32*_41 - _21*_32*_43 - _22*_33*_41 - _23*_31*_42)/det;
+        matrix[13] = (_11*_32*_43 + _12*_33*_41 + _13*_31*_42 - _11*_33*_42 - _12*_31*_43 - _13*_32*_41)/det;
+        matrix[14] = (_11*_23*_42 + _12*_21*_43 + _13*_22*_41 - _11*_22*_43 - _12*_23*_41 - _13*_21*_42)/det;
+        matrix[15] = (_11*_22*_33 + _12*_23*_31 + _13*_21*_32 - _11*_23*_32 - _12*_21*_33 - _13*_22*_31)/det;
+        return true;
     }
 }
