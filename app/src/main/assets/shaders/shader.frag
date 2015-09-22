@@ -33,6 +33,7 @@ uniform float color_A;
         } else if (bPS) {
             vec4 tex = texture2D(TEX, gl_PointCoord);
             gl_FragColor = vec4(v_color, alpha) * tex;
+            //gl_FragColor = tex;
         } else {
             vec4 lPos = viewMatrix*lightPosition;	// light position in the eye-space coordinate
             vec3 n = normalize(norm);	// norm interpolated via rasterizer should be normalized again here

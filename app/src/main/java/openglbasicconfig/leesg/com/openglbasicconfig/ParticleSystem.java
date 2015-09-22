@@ -19,21 +19,21 @@ public class ParticleSystem {
     private int positionLoc;
     private int velocityLoc;
     private int colorLoc;
-    private int deathFrameLoc;
+    private int birthFrameLoc;
     private int mtrxhandle;
     private int mSamplerLoc;
     private int mHandleBitmap;
     public FloatBuffer posBuffer;
     public FloatBuffer velocityBuffer;
     public FloatBuffer colorBuffer;
-    public IntBuffer deathFrameBuffer;
+    public FloatBuffer birthFrameBuffer;
     public int pointCount;
 
     public ParticleSystem (int mProgramImage) {
         positionLoc = GLES20.glGetAttribLocation(mProgramImage, "position");
         velocityLoc = GLES20.glGetAttribLocation(mProgramImage, "normal");
-        colorLoc = GLES20.glGetUniformLocation(mProgramImage, "color");
-        deathFrameLoc = GLES20.glGetUniformLocation(mProgramImage, "deathFrame");
+        colorLoc = GLES20.glGetAttribLocation(mProgramImage, "color");
+        birthFrameLoc = GLES20.glGetAttribLocation(mProgramImage, "birthFrame");
         mtrxhandle = GLES20.glGetUniformLocation(mProgramImage, "uMVPMatrix");
         mSamplerLoc = GLES20.glGetUniformLocation(mProgramImage, "TEX");
         emitterList = new Vector<Emitter>();
@@ -65,12 +65,12 @@ public class ParticleSystem {
         public Emitter() {
             this.pos = new Vector3f();
             this.velocity = new Vector3f();
-            this.isActive = true;
+            this.isActive = false;
         }
         public Emitter(Vector3f pos , Vector3f velocity) {
             this.pos = new Vector3f(pos.x, pos.y, pos.z);
             this.velocity = new Vector3f(velocity.x, velocity.y, velocity.z);
-            this.isActive = true;
+            this.isActive = false;
         }
     }
 
@@ -78,9 +78,9 @@ public class ParticleSystem {
         Emitter emitter = new Emitter(pos, velocity);
         emitterList.add(emitter);
     }
-    public void addParticle(int frame, int life, Vector3f color) {
+    public void addParticle(int frame, Vector3f color) {
         Random random = new Random();
-        random.setSeed(System.currentTimeMillis());
+        //random.setSeed(System.currentTimeMillis());
         for( int i = 0 ; i < emitterList.size() ; i++) {
             if(emitterList.elementAt(i).isActive) {
                 int pc3 = 3*pointCount;
@@ -90,17 +90,38 @@ public class ParticleSystem {
                 colorBuffer.put(pc3, color.x);
                 colorBuffer.put(pc3 + 1, color.y);
                 colorBuffer.put(pc3 + 2, color.z);
-                velocityBuffer.put(pc3, random.nextFloat());
-                velocityBuffer.put(pc3 + 1, random.nextFloat());
-                velocityBuffer.put(pc3 + 2, random.nextFloat());
-                deathFrameBuffer.put(pointCount, frame + life);
+                velocityBuffer.put(pc3, random.nextFloat() - 0.5f);
+                velocityBuffer.put(pc3 + 1, random.nextFloat() - 0.5f);
+                velocityBuffer.put(pc3 + 2, random.nextFloat() - 0.5f);
+                birthFrameBuffer.put(pointCount, (float)frame);
                 pointCount++;
+                if(pointCount == 10000) {
+                    float[] tempBuf = new float[15000];
+                    float[] tempBuf2 = new float[5000];
+                    posBuffer.position(15000);
+                    posBuffer.get(tempBuf);
+                    posBuffer.position(0);
+                    posBuffer.put(tempBuf);
+                    colorBuffer.position(15000);
+                    colorBuffer.get(tempBuf);
+                    colorBuffer.position(0);
+                    colorBuffer.put(tempBuf);
+                    velocityBuffer.position(15000);
+                    velocityBuffer.get(tempBuf);
+                    velocityBuffer.position(0);
+                    velocityBuffer.put(tempBuf);
+                    birthFrameBuffer.position(5000);
+                    birthFrameBuffer.get(tempBuf2);
+                    birthFrameBuffer.position(0);
+                    birthFrameBuffer.put(tempBuf2);
+                    pointCount = 5000;
+                }
             }
         }
         posBuffer.position(0);
         colorBuffer.position(0);
         velocityBuffer.position(0);
-        deathFrameBuffer.position(0);
+        birthFrameBuffer.position(0);
     }
 
     public void deactivate() {
@@ -125,18 +146,19 @@ public class ParticleSystem {
         colorBuffer = mColors.asFloatBuffer();
         ByteBuffer mVelocities = (ByteBuffer.allocateDirect(10000 * 3 * 4)).order(ByteOrder.nativeOrder());
         velocityBuffer = mVelocities.asFloatBuffer();
-        ByteBuffer mDFrames = (ByteBuffer.allocateDirect(10000 * 3 * 4)).order(ByteOrder.nativeOrder());
-        deathFrameBuffer = mDFrames.asIntBuffer();
+        ByteBuffer mBFrames = (ByteBuffer.allocateDirect(10000 * 2 * 4)).order(ByteOrder.nativeOrder());
+        birthFrameBuffer = mBFrames.asFloatBuffer();
         pointCount = 0;
     }
     public void clearBuffer() {
         posBuffer.clear();
         colorBuffer.clear();
         velocityBuffer.clear();
-        deathFrameBuffer.clear();
+        birthFrameBuffer.clear();
         posBuffer.position(0);
         colorBuffer.position(0);
         velocityBuffer.position(0);
+        birthFrameBuffer.position(0);
         pointCount = 0;
     }
     public void draw(float[] m) {
@@ -146,18 +168,18 @@ public class ParticleSystem {
         GLES20.glVertexAttribPointer(colorLoc, 3, GLES20.GL_FLOAT, false, 0, colorBuffer);
         GLES20.glEnableVertexAttribArray(velocityLoc);
         GLES20.glVertexAttribPointer(velocityLoc, 3, GLES20.GL_FLOAT, false, 0, velocityBuffer);
-        GLES20.glEnableVertexAttribArray(deathFrameLoc);
-        GLES20.glVertexAttribPointer(deathFrameLoc, 1, GLES20.GL_FLOAT, false, 0, deathFrameBuffer);
+        GLES20.glEnableVertexAttribArray(birthFrameLoc);
+        GLES20.glVertexAttribPointer(birthFrameLoc, 1, GLES20.GL_FLOAT, false, 0, birthFrameBuffer);
         GLES20.glUniformMatrix4fv(mtrxhandle, 1, false, m, 0);
         // 투명한 배경을 처리한다.
         GLES20.glEnable(GLES20.GL_BLEND);
         GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
         //이미지 핸들을 바인드 한다. 수정중
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,mHandleBitmap);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mHandleBitmap);
         GLES20.glDrawArrays(GLES20.GL_POINTS, 0, pointCount);
         GLES20.glDisableVertexAttribArray(positionLoc);
         GLES20.glDisableVertexAttribArray(colorLoc);
         GLES20.glDisableVertexAttribArray(velocityLoc);
-        GLES20.glDisableVertexAttribArray(deathFrameLoc);
+        GLES20.glDisableVertexAttribArray(birthFrameLoc);
     }
 }

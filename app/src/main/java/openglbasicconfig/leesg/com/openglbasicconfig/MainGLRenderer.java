@@ -177,11 +177,14 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     private void initUser() {
         //유저 정보 로드
         Vector3f temp = new Vector3f();
+        Vector3f pos = new Vector3f();
         mUser = new Planet(mProgramImage, 0.0f, 0.1f, 0.2f, 1.0f, 1, 1, 0.0001f, 1.0f, temp);
         temp.setXYZ(1.0f, 0.0f, 0.0f);
-        mUser.addCannon(temp, 10, 0.015f, ConstMgr.MISSILE_STANDARD);
+        mUser.addCannon(temp, 10, 0.015f, ConstMgr.MISSILE_STANDARD, 0);
+        mParticleSystem.addEmitter(pos, pos);
         temp.setXYZ(-1.0f, 0.0f, 0.0f);
-        mUser.addCannon(temp, 10, 0.015f, ConstMgr.MISSILE_STANDARD);
+        mUser.addCannon(temp, 10, 0.015f, ConstMgr.MISSILE_STANDARD, 1);
+        mParticleSystem.addEmitter(pos, pos);
         setResourceUser();
     }
     private void initStage() {
@@ -359,6 +362,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                 mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[i].missile.setLife(ConstMgr.MAX_AIM_VERTEXCOUNT);
             }
         }
+        mParticleSystem.deactivate();
     }
 
     @Override
@@ -386,7 +390,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_GAME) {
             if (frame != tempFrame) { update(); }
             RenderGame(mMtrxProjectionAndView, mMtrxOrthoAndView);
-        } else if (ConstMgr.SCREEN_MODE == 4) {
+        } else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_TEST) {
             if (frame != tempFrame) {update();}
             RenderTest(mMtrxProjectionAndView, mMtrxOrthoAndView);
         }
@@ -396,7 +400,8 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     private void RenderIntro(float[] pv, float[] orth) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
-        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bPS"), 0);
         GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
         mIntroScreen.draw(orth);
         for(int i = 0 ; i < ConstMgr.INTROBUTTON_NUM ; i++) {
@@ -409,6 +414,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bPS"), 0);
         GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
         mStageScreen.draw(orth);
         mBackButton.draw(orth);
@@ -423,6 +429,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         // Render 3D
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bPS"), 0);
         GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 0);
         float[] tempMatrix = new float[16];
         Vector3f temp = new Vector3f();
@@ -471,6 +478,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             mStage[ConstMgr.STAGE].planetList[i].draw(mMVPMatrix);
         }
         //미사일
+        /*
         if(ConstMgr.RENDER_MODE == ConstMgr.RENDER_ANIMATION) {
             int turnframe = mStage[ConstMgr.STAGE].currentFrame - mStage[ConstMgr.STAGE].turn * ConstMgr.FRAME_PER_TURN;
             if (turnframe < ConstMgr.FRAME_PER_TURN) {
@@ -498,8 +506,30 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                     }
                 }
             }
+        }*/
+        Vector3f color = new Vector3f(1,1,1);
+        mParticleSystem.addParticle(frame, color);
+        if(ConstMgr.RENDER_MODE == ConstMgr.RENDER_ANIMATION) {
+            int turnframe = mStage[ConstMgr.STAGE].currentFrame - mStage[ConstMgr.STAGE].turn * ConstMgr.FRAME_PER_TURN;
+            if (turnframe < ConstMgr.FRAME_PER_TURN) {
+                for (int j = 0; j < mStage[ConstMgr.STAGE].listSize; j++) {
+                    for (int i = 0; i < mStage[ConstMgr.STAGE].planetList[j].getCannonListSize(); i++) {
+                        if (mStage[ConstMgr.STAGE].planetList[j].cannons[i].missile.getIsActive() && (turnframe < mStage[ConstMgr.STAGE].planetList[j].cannons[i].missile.getLife())) {
+                            mParticleSystem.emitterList.elementAt(mStage[ConstMgr.STAGE].planetList[j].cannons[i].emitterIndex).pos.copy(mStage[ConstMgr.STAGE].planetList[j].cannons[i].missile.positionBuffer[turnframe]);
+                            mParticleSystem.emitterList.elementAt(mStage[ConstMgr.STAGE].planetList[j].cannons[i].emitterIndex).isActive = true;
+                        } else {
+                            mParticleSystem.emitterList.elementAt(mStage[ConstMgr.STAGE].planetList[j].cannons[i].emitterIndex).isActive = false;
+                        }
+                    }
+                }
+                GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "life"), ConstMgr.PARTICLE_LIFE);
+                GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bPS"), 1);
+                GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 0);
+                GLES20.glDisable(GLES20.GL_DEPTH_TEST);
+                mParticleSystem.draw(pv);
+                GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bPS"), 0);
+            }
         }
-
         GLES20.glDisable(GLES20.GL_DEPTH_TEST);
         // Render UI
         GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
@@ -532,7 +562,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         Vector3f color = new Vector3f(1, 1, 1);
-        mParticleSystem.addParticle(frame, ConstMgr.PARTICLE_LIFE, color);
+        mParticleSystem.addParticle(frame, color);
         GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "life"), ConstMgr.PARTICLE_LIFE);
         GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 0);
         GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bPS"), 1);
@@ -594,7 +624,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                         Vector3f pos = new Vector3f(0,0,0);
                         mParticleSystem.addEmitter(pos, pos);
                         startTime = mLastTime;
-                        ConstMgr.SCREEN_MODE = 4;
+                        ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_TEST;
                     }
                 }
             }
@@ -724,6 +754,27 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                     x2 = mScreenConfig.deviceToVirtualX((int) event.getX(1));  //////////////////////
                     y2 = mScreenConfig.deviceToVirtualY((int) event.getY(1));  //////////////////////
                     distance = (float)Math.sqrt((double)((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2)));
+            }
+        } else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_TEST) {
+            switch(action) {
+                case MotionEvent.ACTION_DOWN :
+                    break;
+                case MotionEvent.ACTION_MOVE :
+                    px = x1;
+                    py = y1;
+                    x1 = mScreenConfig.deviceToVirtualX((int) event.getX(0));  //////////////////////
+                    y1 = mScreenConfig.deviceToVirtualY((int) event.getY(0));  //////////////////////
+                    if (Math.abs(px - x1) > 2) {
+                        mCamera.setRotateY((px - x1) / 2.0f);
+                        Matrix.multiplyMM(mMtrxProjectionAndView, 0, mCamera.projectionMatrix, 0, mCamera.viewMatrix, 0);
+                    }
+                    if (Math.abs(py - y1) > 2) {
+                        mCamera.setRotateX((y1 - py) / 2.0f);
+                        Matrix.multiplyMM(mMtrxProjectionAndView, 0, mCamera.projectionMatrix, 0, mCamera.viewMatrix, 0);
+                    }
+                    break;
+                case MotionEvent.ACTION_UP :
+                    break;
             }
         }
         return true;

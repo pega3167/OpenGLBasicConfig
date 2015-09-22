@@ -8,6 +8,7 @@ public class ConstMgr {
     public final static int SCREEN_INTRO = 1;
     public final static int SCREEN_STAGE = 2;
     public final static int SCREEN_GAME = 3;
+    public final static int SCREEN_TEST = 4;
     //미사일 모드
     public final static int MISSILE_NOTHING = 0;
     public final static int MISSILE_STANDARD = 1;

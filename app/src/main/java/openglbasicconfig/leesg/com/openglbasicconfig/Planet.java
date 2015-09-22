@@ -49,7 +49,7 @@ public class Planet extends Sphere {
         this.maxHitPoint = planet.maxHitPoint;
         this.cannonListSize = 0;
         for( int i = 0 ; i < planet.cannonListSize ; i++) {
-            this.addCannon(planet.cannons[i].relativePos, planet.cannons[i].attackPoint, planet.cannons[i].speed, planet.cannons[i].type);
+            this.addCannon(planet.cannons[i].relativePos, planet.cannons[i].attackPoint, planet.cannons[i].speed, planet.cannons[i].type, planet.cannons[i].emitterIndex);
         }
         this.updateCannon(0);
     }
@@ -108,7 +108,7 @@ public class Planet extends Sphere {
     }
     public Vector3f getCurrentPos() { return this.currentPos; }
 
-    public void addCannon(Vector3f pos, int attackPoint, float speed, int type) {
+    public void addCannon(Vector3f pos, int attackPoint, float speed, int type, int emitterIndex) {
         if(cannonListSize >= 5) {
             // 캐논수 꽉참
         }
@@ -120,6 +120,7 @@ public class Planet extends Sphere {
             this.cannons[cannonListSize].attackPoint = attackPoint;
             this.cannons[cannonListSize].speed = speed;
             this.cannons[cannonListSize].type = type;
+            this.cannons[cannonListSize].emitterIndex = emitterIndex;
             float modelMatrix[] = new float[16];
             float tempMatrix[] = new float[16];
             Matrix.setIdentityM(modelMatrix, 0);
@@ -181,6 +182,8 @@ public class Planet extends Sphere {
         private int attackPoint; //공력력 or 실드 체력
         private float speed; //미사일 속도 or 실드 반지름
         private int type; //cannon or 실드 type
+
+        public int emitterIndex;
         public Missile missile;
         public Aim aim;
 
