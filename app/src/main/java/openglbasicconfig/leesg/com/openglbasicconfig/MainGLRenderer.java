@@ -1100,8 +1100,11 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramBlur, "direction"), 0);
         else if (step == 2)
             GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramBlur, "direction"), 1);
+        if (step == 1)
+            GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramBlur, "blurScale"), 0.56f);
+        else if (step == 2)
+            GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramBlur, "blurScale"), 1.0f);
 
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramBlur, "blurScale"),  1.0f);
         GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramBlur, "blurAmount"), 20f);
         GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramBlur, "blurStrength"), 0.5f);
 
