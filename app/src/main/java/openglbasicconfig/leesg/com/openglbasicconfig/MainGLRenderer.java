@@ -9,6 +9,11 @@ import android.util.Log;
 import android.view.MotionEvent;
 
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
@@ -24,12 +29,19 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     private final float[] mMVPMatrix = new float[16]; //proj x view x model
     //프로그램
     private static int mProgramImage;
+    private static int mProgramBlur;
     private static int mProgramSolidColor;
     //프로그램 시간
     long mLastTime;
     //디바이스의 넓이, 높이
     public static int mDeviceWidth;
     public static int mDeviceHeight;
+    //FBO
+    // Render to Texture Variables
+    private RTTQuad mRTT;
+    private RTTQuad mBlur;
+
+
     //주 액티비티
     MainActivity mActivity;
     Context mContext;
@@ -42,6 +54,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     // 화면 이미지
     Square mIntroScreen;
     Square mStageScreen;
+    Square mScreenQuad;
     // 화면 버튼
     Button mIntroButtons[];
     Button mStageButtons[];
@@ -90,6 +103,8 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     public void onResume() {
         mLastTime = System.currentTimeMillis();
     }
+    // Rendering 화면을 텍스쳐로 변환
+
     // 서피스뷰 변경
     @Override
     public void onSurfaceChanged(GL10 unused, int width, int height){
@@ -109,6 +124,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mScreenConfig = new ScreenConfig(mDeviceWidth, mDeviceHeight);
         mScreenConfig.setSize(1280, 720);
         mProgramImage = ESShader.loadProgramFromAsset(mContext,"shaders/shader.vert","shaders/shader.frag");
+        mProgramBlur = ESShader.loadProgramFromAsset(mContext, "shaders/blur.vert", "shaders/blur.frag");
         GLES20.glUseProgram(mProgramImage);
         // 처음에만 초기화하고 인터럽트 발생 후에는 텍스쳐만 바인드 한다.
         if (mIsFirstCalled) {
@@ -118,6 +134,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         }
         mIsFirstCalled = false;
     }
+
 
     private void init() {
         initResourceLoader();
@@ -129,6 +146,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         initStageScreen();
         initGameScreen();
         initPopup();
+        initFBO();
     }
     private void initResourceLoader() {
         mHangulBitmap = new HangulBitmap(mActivity);
@@ -398,24 +416,25 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     }
     //초기화면
     private void RenderIntro(float[] pv, float[] orth) {
+
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         GLES20.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bPS"), 0);
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_NORMAL);
         mIntroScreen.draw(orth);
         for(int i = 0 ; i < ConstMgr.INTROBUTTON_NUM ; i++) {
             mIntroButtons[i].draw(orth);
         }
         mPopup.draw(orth);
+        //setRenderTexture(filterBuf1, renderTex1);
+        //DrawQuad();
     }
     //스테이지 선택 화면
     private void RenderStage(float[] pv, float[] orth) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bPS"), 0);
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_NORMAL);
         mStageScreen.draw(orth);
         mBackButton.draw(orth);
         for(int i = 0 ; i < ConstMgr.STAGEBUTTON_NUM ; i++) {
@@ -428,32 +447,59 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        // Render 3D
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bPS"), 0);
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 0);
         float[] tempMatrix = new float[16];
         Vector3f temp = new Vector3f();
-        //스카이 스피어
+        GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+        //**************************************************************************************************************************************************************
+        // 태양 glow effect texture -> fboIdTexStep2 에 glow texture 저장됨
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_NORMAL);
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, fboId);
+        GLES20.glViewport(0, 0, fboWidth, fboHeight);
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        //mMVPMatrix 계산
         Matrix.setIdentityM(tempMatrix, 0);
         Matrix.setIdentityM(mModelMatrix, 0);
-        Matrix.scaleM(tempMatrix, 0, 100, 100, 100);
+        Matrix.scaleM(tempMatrix, 0, mStage[ConstMgr.STAGE].planetList[0].getRadius(), mStage[ConstMgr.STAGE].planetList[0].getRadius(), mStage[ConstMgr.STAGE].planetList[0].getRadius());
         Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.setIdentityM(tempMatrix, 0);
+        Matrix.rotateM(tempMatrix, 0, mStage[ConstMgr.STAGE].currentFrame * mStage[ConstMgr.STAGE].planetList[0].getRotationSpeed(), 0.0f, 1.0f, 0.0f);
+        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.setIdentityM(tempMatrix, 0);
+        Matrix.translateM(tempMatrix, 0, mStage[ConstMgr.STAGE].planetList[0].getOrbitRadius(), 0.0f, 0.0f);
+        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.setIdentityM(tempMatrix, 0);
+        Matrix.rotateM(tempMatrix, 0, mStage[ConstMgr.STAGE].currentFrame * mStage[ConstMgr.STAGE].planetList[0].getRevolutionSpeed(), 0.0f, 1.0f, 0.0f);
+        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        temp.setXYZ(0, 0, 0);
+        temp.multM(mModelMatrix, 1.0f);
+        mStage[ConstMgr.STAGE].planetList[0].setCurrentPos(temp);
         //최종 P * V * M 매트릭스
         Matrix.multiplyMM(mModelViewMatrix, 0, mCamera.viewMatrix, 0, mModelMatrix, 0);
         Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
         GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(mProgramImage, "modelViewMatrix"), 1, false, mModelViewMatrix, 0);
-        GLES20.glEnable(GLES20.GL_DEPTH_TEST);
-        /*
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
-        spaceSphere.draw(mMVPMatrix);
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 0);
-        */
+        mStage[ConstMgr.STAGE].planetList[0].draw(mMVPMatrix);
+
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+        // Blur
+        Blur(orth);
+
+        //**************************************************************************************************************************************************************
+        // Render 3D
+        // fboId에 전체Scene을 저장
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, fboId);
+        GLES20.glViewport(0, 0, fboWidth, fboHeight);
+        GLES20.glUseProgram(mProgramImage);
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
         //행성
         //model matrix 계산
         for( int i = 0 ; i < 4 ; i++ ) {
-            if(i==0) GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
-            else GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 0);
+            if(i==0) GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_NORMAL);
+            else GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_PHONG);
             Matrix.setIdentityM(tempMatrix, 0);
             Matrix.setIdentityM(mModelMatrix, 0);
             Matrix.scaleM(tempMatrix, 0, mStage[ConstMgr.STAGE].planetList[i].getRadius(), mStage[ConstMgr.STAGE].planetList[i].getRadius(), mStage[ConstMgr.STAGE].planetList[i].getRadius());
@@ -477,36 +523,9 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(mProgramImage, "modelViewMatrix"), 1, false, mModelViewMatrix, 0);
             mStage[ConstMgr.STAGE].planetList[i].draw(mMVPMatrix);
         }
-        //미사일
-        /*
-        if(ConstMgr.RENDER_MODE == ConstMgr.RENDER_ANIMATION) {
-            int turnframe = mStage[ConstMgr.STAGE].currentFrame - mStage[ConstMgr.STAGE].turn * ConstMgr.FRAME_PER_TURN;
-            if (turnframe < ConstMgr.FRAME_PER_TURN) {
-                for (int j = 0; j < mStage[ConstMgr.STAGE].listSize; j++) {
-                    for (int i = 0; i < mStage[ConstMgr.STAGE].planetList[j].getCannonListSize(); i++) {
-                        if(mStage[ConstMgr.STAGE].planetList[j].cannons[i].missile.getIsActive() && (turnframe < mStage[ConstMgr.STAGE].planetList[j].cannons[i].missile.getLife())) {
-                            Matrix.setIdentityM(tempMatrix, 0);
-                            Matrix.setIdentityM(mModelMatrix, 0);
-                            Matrix.scaleM(tempMatrix, 0, 0.0001f, 0.0001f, 0.0001f);
-                            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
-                            Matrix.setIdentityM(tempMatrix, 0);
-                            Matrix.rotateM(tempMatrix, 0, mStage[ConstMgr.STAGE].planetList[j].cannons[i].missile.angleBuffer[turnframe] - 90, 0.0f, 1.0f, 0.0f);
-                            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
-                            Matrix.setIdentityM(tempMatrix, 0);
-                            Vector3f pos = new Vector3f();
-                            pos.copy(mStage[ConstMgr.STAGE].planetList[j].cannons[i].missile.positionBuffer[turnframe]);
-                            Matrix.translateM(tempMatrix, 0, pos.x, pos.y, pos.z);
-                            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
-                            //최종 P * V * M 매트릭스
-                            Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
-                            Matrix.multiplyMM(mModelViewMatrix, 0, mCamera.viewMatrix, 0, mModelMatrix, 0);
-                            GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(mProgramImage, "modelViewMatrix"), 1, false, mModelViewMatrix, 0);
-                            mMissile.draw(mMVPMatrix);
-                        }
-                    }
-                }
-            }
-        }*/
+
+        // 파티클 시스템
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_PARTICLE_SYSTEM);
         Vector3f color = new Vector3f(1,1,1);
         mParticleSystem.addParticle(frame, color);
         if(ConstMgr.RENDER_MODE == ConstMgr.RENDER_ANIMATION) {
@@ -523,16 +542,42 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                     }
                 }
                 GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "life"), ConstMgr.PARTICLE_LIFE);
-                GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bPS"), 1);
-                GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 0);
                 GLES20.glDisable(GLES20.GL_DEPTH_TEST);
                 mParticleSystem.draw(pv);
-                GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bPS"), 0);
             }
         }
+        // 미사일 조준 궤도
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_AIM);
+        if((ConstMgr.RENDER_MODE == ConstMgr.RENDER_SETTING) && (ConstMgr.TURN_MODE == ConstMgr.TURN_AIM)) {
+            for(int i = 0 ; i < mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getCannonListSize() ; i++) {
+                if( mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[i].aim.getIsAimed()) {
+                    mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[i].aim.draw(pv);
+                }
+            }
+        }
+
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+        //**************************************************************************************************************************************************************
         GLES20.glDisable(GLES20.GL_DEPTH_TEST);
+        // render 3D Scene with Bloom effect of sun
+        GLES20.glViewport(0, 0, mDeviceWidth, mDeviceHeight);
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_BLOOM);
+        mRTT.setPos(mScreenConfig.getmVirtualWidth() / 2, mScreenConfig.getmVirtualHeight() / 2);
+        mRTT.setSize(mScreenConfig.getmVirtualWidth(), mScreenConfig.getmVirtualHeight());
+        mRTT.drawWithoutTex(orth);
+        GLES20.glUseProgram(mProgramImage);
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, fboTex);
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "TEX"), 0);
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, fboTexStep2);
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "TEX1"), 1);
+        mRTT.drawElements();
+        //**************************************************************************************************************************************************************
         // Render UI
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_NORMAL);
         //buttons
         //mBackButton.draw(orth);
         mShootButton.draw(orth);
@@ -544,30 +589,65 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         for(int i = 0 ; i < 2; i++) {
             mModeButton[i].draw(orth);
         }
-        // 궤도
-        if((ConstMgr.RENDER_MODE == ConstMgr.RENDER_SETTING) && (ConstMgr.TURN_MODE == ConstMgr.TURN_AIM)) {
-            GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 1);
-            for(int i = 0 ; i < mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getCannonListSize() ; i++) {
-                if( mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[i].aim.getIsAimed()) {
-                    mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[i].aim.draw(pv);
-                }
-            }
-            GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 0);
-        }
+        // popup
         mPopup.draw(orth);
     }
 
     private void RenderTest(float[] pv, float[] orth) {
+        GLES20.glUseProgram(mProgramImage);
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, fboId);
+        GLES20.glViewport(0, 0, fboWidth, fboHeight);
+
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         Vector3f color = new Vector3f(1, 1, 1);
         mParticleSystem.addParticle(frame, color);
         GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "life"), ConstMgr.PARTICLE_LIFE);
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bUI"), 0);
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bPS"), 1);
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_PARTICLE_SYSTEM);
         mParticleSystem.draw(pv);
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "bPS"), 0);
+
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+
+        Blur(orth);
+
+        GLES20.glUseProgram(mProgramImage);
+        GLES20.glViewport(0, 0, mDeviceWidth, mDeviceHeight);
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_NORMAL);
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "TEX"), 0);
+        mRTT.setPos(mScreenConfig.getmVirtualWidth() / 4, mScreenConfig.getmVirtualHeight() / 4 * 3);
+        mRTT.drawWithoutTex(orth);
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, fboTex);
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "TEX"), 0);
+        mRTT.drawElements();
+        mRTT.setPos(mScreenConfig.getmVirtualWidth() / 4, mScreenConfig.getmVirtualHeight() / 4);
+        mRTT.drawWithoutTex(orth);
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, fboTexStep1);
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "TEX"), 0);
+        mRTT.drawElements();
+        mRTT.setPos(mScreenConfig.getmVirtualWidth() / 4 * 3, mScreenConfig.getmVirtualHeight() / 4);
+        mRTT.drawWithoutTex(orth);
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, fboTexStep2);
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "TEX"), 0);
+        mRTT.drawElements();
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_BLOOM);
+        mRTT.setPos(mScreenConfig.getmVirtualWidth() / 4 * 3, mScreenConfig.getmVirtualHeight() / 4 * 3);
+        mRTT.drawWithoutTex(orth);
+        GLES20.glUseProgram(mProgramImage);
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, fboTex);
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "TEX"), 0);
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, fboTexStep2);
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "TEX1"), 1);
+        mRTT.drawElements();
     }
 
     //터치 이벤트
@@ -623,6 +703,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                     if(mBackButton.isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
                         Vector3f pos = new Vector3f(0,0,0);
                         mParticleSystem.addEmitter(pos, pos);
+                        mParticleSystem.activate();
                         startTime = mLastTime;
                         ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_TEST;
                     }
@@ -903,36 +984,137 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         }
 
     }
-    boolean inverse(float[] matrix) {
-        float _11, _12, _13, _14, _21, _22, _23, _24, _31, _32, _33, _34, _41, _42, _43, _44;
-        _11 = matrix[0];        _12 = matrix[1];        _13 = matrix[2];        _14 = matrix[3];
-        _21 = matrix[4];        _22 = matrix[5];        _23 = matrix[6];        _24 = matrix[7];
-        _31 = matrix[8];        _32 = matrix[9];        _33 = matrix[10];        _34 = matrix[11];
-        _41 = matrix[12];        _42 = matrix[13];        _43 = matrix[14];        _44 = matrix[15];
-        float det;
-        det = _11*_22*_33*_44 + _11*_23*_34*_42 + _11*_24*_32*_43 + _12*_21*_34*_43
-                + _12*_23*_31*_44 + _12*_24*_33*_41	+ _13*_21*_32*_44 + _13*_22*_34*_41
-                + _13*_24*_31*_42 + _14*_21*_33*_42 + _14*_22*_31*_43 + _14*_23*_32*_41
-                - _11*_22*_34*_43 - _11*_23*_32*_44 - _11*_24*_33*_42 - _12*_21*_33*_44
-                - _12*_23*_34*_41 - _12*_24*_31*_43	- _13*_21*_34*_42 - _13*_22*_31*_44
-                - _13*_24*_32*_41 - _14*_21*_32*_43 - _14*_22*_33*_41 - _14*_23*_31*_42;
-        if(det == 0) return false;
-        matrix[0] = (_22*_33*_44 + _23*_34*_42 + _24*_32*_43 - _22*_34*_43 - _23*_32*_44 - _24*_33*_42)/det;
-        matrix[1] = (_12*_34*_43 + _13*_32*_44 + _14*_33*_42 - _12*_33*_44 - _13*_34*_42 - _14*_32*_43)/det;
-        matrix[2] = (_12*_23*_44 + _13*_24*_42 + _14*_22*_43 - _12*_24*_43 - _13*_22*_44 - _14*_23*_42)/det;
-        matrix[3] = (_12*_24*_33 + _13*_22*_34 + _14*_23*_32 - _12*_23*_34 - _13*_24*_32 - _14*_22*_33)/det;
-        matrix[4] = (_21*_34*_43 + _23*_31*_44 + _24*_33*_41 - _21*_33*_44 - _23*_34*_41 - _24*_31*_43)/det;
-        matrix[5] = (_11*_33*_44 + _13*_34*_41 + _14*_31*_43 - _11*_34*_43 - _13*_31*_44 - _14*_33*_41)/det;
-        matrix[6] = (_11*_24*_43 + _13*_21*_44 + _14*_23*_41 - _11*_23*_44 - _13*_24*_41 - _14*_21*_43)/det;
-        matrix[7] = (_11*_23*_34 + _13*_24*_31 + _14*_21*_33 - _11*_24*_33 - _13*_21*_34 - _14*_23*_31)/det;
-        matrix[8] = (_21*_32*_44 + _22*_34*_41 + _24*_31*_42 - _21*_34*_42 - _22*_31*_44 - _24*_32*_41)/det;
-        matrix[9] = (_11*_34*_42 + _12*_31*_44 + _14*_32*_41 - _11*_32*_44 - _12*_34*_41 - _14*_31*_42)/det;
-        matrix[10] = (_11*_22*_44 + _12*_24*_41 + _14*_21*_42 - _11*_24*_42 - _12*_21*_44 - _14*_22*_41)/det;
-        matrix[11] = (_11*_24*_32 + _12*_21*_34 + _14*_22*_31 - _11*_22*_34 - _12*_24*_31 - _14*_21*_32)/det;
-        matrix[12] = (_21*_33*_42 + _22*_31*_43 + _23*_32*_41 - _21*_32*_43 - _22*_33*_41 - _23*_31*_42)/det;
-        matrix[13] = (_11*_32*_43 + _12*_33*_41 + _13*_31*_42 - _11*_33*_42 - _12*_31*_43 - _13*_32*_41)/det;
-        matrix[14] = (_11*_23*_42 + _12*_21*_43 + _13*_22*_41 - _11*_22*_43 - _12*_23*_41 - _13*_21*_42)/det;
-        matrix[15] = (_11*_22*_33 + _12*_23*_31 + _13*_21*_32 - _11*_23*_32 - _12*_21*_33 - _13*_22*_31)/det;
-        return true;
+
+    //********************************************************************************************************
+    //FBO
+    private int fboId, fboIdStep1, fboIdStep2;
+    private int fboTex, fboTexStep1, fboTexStep2;
+    private int renderBufferId, renderBufferIdStep1, renderBufferIdStep2;
+    private int fboWidth = 512;
+    private int fboHeight = 512;
+    public int InitiateFrameBuffer(int fbo, int tex, int rid)
+    {
+        //Bind Frame buffer
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, fbo);
+        //Bind texture
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, tex);
+        //Define texture parameters
+        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, fboWidth, fboHeight, 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null);
+
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+        //Bind render buffer and define buffer dimension
+        GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER, rid);
+        GLES20.glRenderbufferStorage(GLES20.GL_RENDERBUFFER, GLES20.GL_DEPTH_COMPONENT16, fboWidth, fboHeight);
+        //Attach texture FBO color attachment
+        GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, tex, 0);
+        //Attach render buffer to depth attachment
+        GLES20.glFramebufferRenderbuffer(GLES20.GL_FRAMEBUFFER, GLES20.GL_DEPTH_ATTACHMENT, GLES20.GL_RENDERBUFFER, rid);
+        //we are done, reset
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+        GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER, 0);
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+        return tex;
     }
+    private int[] initFBO() {
+        int[] temp = new int[1];
+        int[] ret = new int[2];
+
+        //generate fbo id
+        GLES20.glGenFramebuffers(1, temp, 0);
+        fboId = temp[0];
+        //generate texture
+        GLES20.glGenTextures(1, temp, 0);
+        fboTex = temp[0];
+        //generate render buffer
+        GLES20.glGenRenderbuffers(1, temp, 0);
+        renderBufferId = temp[0];
+        int rtt = InitiateFrameBuffer(fboId, fboTex, renderBufferId);
+
+        //step1 (blur horizontal)
+        GLES20.glGenFramebuffers(1, temp, 0);
+        fboIdStep1 = temp[0];
+        GLES20.glGenTextures(1, temp, 0);
+        fboTexStep1 = temp[0];
+        GLES20.glGenRenderbuffers(1, temp, 0);
+        renderBufferIdStep1 = temp[0];
+        InitiateFrameBuffer(fboIdStep1, fboTexStep1, renderBufferIdStep1);
+
+        //step2 (blur vertical)
+        GLES20.glGenFramebuffers(1, temp, 0);
+        fboIdStep2 = temp[0];
+        GLES20.glGenTextures(1, temp, 0);
+        fboTexStep2 = temp[0];
+        GLES20.glGenRenderbuffers(1, temp, 0);
+        renderBufferIdStep2 = temp[0];
+        int finalTex = InitiateFrameBuffer(fboIdStep2, fboTexStep2, renderBufferIdStep2);
+
+        ret[0] = rtt;
+        ret[1] = finalTex;
+
+        //init texture square
+        mRTT = new RTTQuad(mProgramImage, this);
+        mRTT.setIsActive(true);
+        mRTT.setPos(mScreenConfig.getmVirtualWidth() / 4, mScreenConfig.getmVirtualHeight() / 4 );
+        mRTT.setSize(mScreenConfig.getmVirtualWidth()/2, mScreenConfig.getmVirtualHeight()/2);
+
+        mBlur = new RTTQuad(mProgramBlur, this);
+        mBlur.setIsActive(true);
+        mBlur.setPos(mScreenConfig.getmVirtualWidth() / 2, mScreenConfig.getmVirtualHeight() / 2);
+        mBlur.setSize(mScreenConfig.getmVirtualWidth()   , mScreenConfig.getmVirtualHeight()  );
+
+        return ret;
+    }
+
+    public void Blur(float[] orth) {
+        GLES20.glUseProgram(mProgramBlur);
+        GLES20.glViewport(0, 0, fboWidth, fboHeight);
+        //apply horizontal blur on fboTex store result in fboTexStep1
+        BlurStep(1, orth);
+        //apply horizontal blur on fboTex store result in fboTexStep2
+        BlurStep(2, orth);
+    }
+    public void BlurStep(int step, float[] orth)
+    {
+        //apply horizontal blur
+        if (step == 1)
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, fboIdStep1);
+        else if (step == 2)//apply vertical blur
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, fboIdStep2);
+
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+
+        mBlur.drawWithoutTex(orth);
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        if (step == 1)
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, fboTex);
+        else if (step == 2)
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, fboTexStep1);
+
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramBlur, "TEX"), 0);
+
+        if (step == 1)
+            GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramBlur, "direction"), 0);
+        else if (step == 2)
+            GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramBlur, "direction"), 1);
+
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramBlur, "blurScale"),  1.0f);
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramBlur, "blurAmount"), 20f);
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramBlur, "blurStrength"), 0.5f);
+
+        mBlur.drawElements();
+
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+    }
+
+
+
+
+
+
+
+
 }

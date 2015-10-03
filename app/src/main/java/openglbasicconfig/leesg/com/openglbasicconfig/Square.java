@@ -41,8 +41,8 @@ public class Square {
     protected float mPosX = 0;
     protected float mPosY = 0;
     // 이미지의 가로 세로 설정
-    private float mWidth = 0;
-    private float mHeight = 0;
+    protected float mWidth = 0;
+    protected float mHeight = 0;
     //이미지의 기울기 설정
     protected int mAngle = 0;
     //이미지의 확대, 축소 설정
@@ -155,7 +155,9 @@ public class Square {
         GLES20.glEnable(GLES20.GL_BLEND);
         GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
         //이미지 핸들을 바인드 한다. 수정중
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,mHandleBitmap);
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mHandleBitmap);
+        GLES20.glUniform1i(mSamplerLoc, 0);
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, indexCount, GLES20.GL_UNSIGNED_SHORT, mIndexBuffer);
         GLES20.glDisableVertexAttribArray(mPositionHandle);
         GLES20.glDisableVertexAttribArray(mTexCoordLoc);

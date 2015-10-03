@@ -175,7 +175,9 @@ public class ParticleSystem {
         GLES20.glEnable(GLES20.GL_BLEND);
         GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
         //이미지 핸들을 바인드 한다. 수정중
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mHandleBitmap);
+        GLES20.glUniform1i(mSamplerLoc, 0);
         GLES20.glDrawArrays(GLES20.GL_POINTS, 0, pointCount);
         GLES20.glDisableVertexAttribArray(positionLoc);
         GLES20.glDisableVertexAttribArray(colorLoc);

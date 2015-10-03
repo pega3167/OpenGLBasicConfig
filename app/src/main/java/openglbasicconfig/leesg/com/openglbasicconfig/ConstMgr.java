@@ -60,4 +60,10 @@ public class ConstMgr {
     public final static int POPUP_RES_CONFIRM = 2;
     public final static int POPUP_RES_CANCLE = 3;
     public final static int POPUP_BUTTON_SIZE = 4;
+
+    public final static float RENDER_NORMAL = 0.0f;
+    public final static float RENDER_PARTICLE_SYSTEM = 1.0f;
+    public final static float RENDER_AIM = 2.0f;
+    public final static float RENDER_PHONG = 3.0f;
+    public final static float RENDER_BLOOM = 4.0f;
 }

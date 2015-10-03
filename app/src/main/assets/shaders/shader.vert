@@ -1,3 +1,4 @@
+precision mediump float;
 
 //vertex attributes
 attribute vec3 position;
@@ -17,7 +18,7 @@ varying float alpha;
 // uniform matrices
 uniform mat4 uMVPMatrix;
 uniform mat4 modelViewMatrix;
-uniform bool bPS;
+uniform float renderMode;
 uniform int frame;
 uniform int life;
 
@@ -28,8 +29,8 @@ uniform int life;
 
 
     void main() {
-        if(bPS) {
-            gl_PointSize = 10.0;
+        if(renderMode == 1.0) {
+            gl_PointSize = 2.0;
             if(int(birthFrame) + life < frame) {
                 v_color = vec3(0, 0, 0);
             } else {

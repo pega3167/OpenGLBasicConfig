@@ -16,8 +16,9 @@ uniform vec4	Ka, Kd, Ks;
 uniform float	shininess;
 uniform bool bUI;
 uniform bool bAim;
-uniform bool bPS;
+uniform float renderMode;
 uniform sampler2D TEX;
+uniform sampler2D TEX1;
 
 uniform mat4 viewMatrix;
 //color uniform for RGBA
@@ -28,13 +29,15 @@ uniform float color_A;
 
 
     void main() {
-        if(bUI) {
-            gl_FragColor = bAim? vec4(1,1,1,1): texture2D(TEX, tc);
-        } else if (bPS) {
+        if(renderMode == 0.0) {
+            gl_FragColor = texture2D(TEX, tc);
+        } else if (renderMode == 1.0) {
             vec4 tex = texture2D(TEX, gl_PointCoord);
             gl_FragColor = vec4(v_color, alpha) * tex;
             //gl_FragColor = tex;
-        } else {
+        } else if (renderMode == 2.0) {
+            gl_FragColor = vec4(1,1,1,1);
+        }else if (renderMode == 3.0) {
             vec4 lPos = viewMatrix*lightPosition;	// light position in the eye-space coordinate
             vec3 n = normalize(norm);	// norm interpolated via rasterizer should be normalized again here
             vec3 p = ecPos.xyz;			// 3D position of this fragment
@@ -48,5 +51,14 @@ uniform float color_A;
             //result.a = 1.0;
             gl_FragColor = result;
             //gl_FragColor = texture2D(TEX, tc);
+        } else if (renderMode == 4.0) {
+            vec4 src = texture2D(TEX, tc);
+            vec3 a = src.xyz;
+            vec4 dst = texture2D(TEX1, tc);
+            //gl_FragColor = dst;
+            //gl_FragColor = max(src, dst);
+            vec4 bloomcolor = clamp((src + dst) - (src * dst), 0.0, 1.0);
+            gl_FragColor = bloomcolor;
+            gl_FragColor.a = 1.0;
         }
     }
