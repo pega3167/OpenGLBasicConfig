@@ -3,14 +3,15 @@ package openglbasicconfig.leesg.com.openglbasicconfig;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 /**
  * Created by LeeSG on 2015-09-29.
  */
 public class RTTQuad extends Square {
-    MainGLRenderer mMainGLRenderer;
-    public RTTQuad(int programImage, MainGLRenderer mainGLRenderer) {
+    public RTTQuad(int programImage) {
         super(programImage);
-        mMainGLRenderer = mainGLRenderer;
     }
 
     public void drawWithoutTex(float[] m) {
@@ -47,6 +48,38 @@ public class RTTQuad extends Square {
         this.mHeight = height;
         setupBuffer();
     }
+
+    public void setupBuffer() {
+        int numVertices = 4;
+        int numIndices = 6;
+        indexCount = numIndices;
+        ByteBuffer mVertices = ByteBuffer.allocateDirect(numVertices * 3 * 4);
+        mVertices.order(ByteOrder.nativeOrder());
+        mVertexBuffer = mVertices.asFloatBuffer();
+        ByteBuffer mTexCoords = ByteBuffer.allocateDirect(numVertices * 2 * 4);
+        mTexCoords.order(ByteOrder.nativeOrder());
+        mTexCoordBuffer = mTexCoords.asFloatBuffer();
+        ByteBuffer mIndices = ByteBuffer.allocateDirect(numIndices * 2);
+        mIndices.order(ByteOrder.nativeOrder());
+        mIndexBuffer = mIndices.asShortBuffer();
+        float [] vertices = new float[] {
+                mWidth / (-2), mHeight / 2, 0.0f,
+                mWidth / (-2), mHeight / (-2), 0.0f,
+                mWidth / 2, mHeight / (-2), 0.0f,
+                mWidth / 2, mHeight / 2, 0.0f
+        };
+        mVertexBuffer.put(vertices);
+        short[] indices = new short[] { 0, 1, 2, 0, 2, 3};
+        mIndexBuffer.put(indices);
+        float[] mUvs = new float[] {
+                0f, 1f, 0f, 0f, 1f, 0f, 1f, 1f
+        };
+        mTexCoordBuffer.put(mUvs);
+        mVertexBuffer.position(0);
+        mTexCoordBuffer.position(0);
+        mIndexBuffer.position(0);
+    }
+
     public void drawElements()
     {
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, indexCount, GLES20.GL_UNSIGNED_SHORT, mIndexBuffer);

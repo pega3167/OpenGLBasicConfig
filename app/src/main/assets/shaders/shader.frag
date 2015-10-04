@@ -37,7 +37,7 @@ uniform float color_A;
             //gl_FragColor = tex;
         } else if (renderMode == 2.0) {
             gl_FragColor = vec4(1,1,1,1);
-        }else if (renderMode == 3.0) {
+        } else if (renderMode == 3.0) {
             vec4 lPos = viewMatrix*lightPosition;	// light position in the eye-space coordinate
             vec3 n = normalize(norm);	// norm interpolated via rasterizer should be normalized again here
             vec3 p = ecPos.xyz;			// 3D position of this fragment

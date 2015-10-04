@@ -1,12 +1,17 @@
 package openglbasicconfig.leesg.com.openglbasicconfig;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
+import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.SoundPool;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Window;
@@ -24,6 +29,7 @@ public class MainActivity extends Activity {
     private SoundPool mSoundPool;
     private int mSoundExplosion;
     private int mSoundButton;
+    AudioManager audioManager;
     //액티비티 생성
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,13 +45,32 @@ public class MainActivity extends Activity {
         mGLSurfaceView = new MainGLSurfaceView(this, width, height);
         setContentView(mGLSurfaceView);
         //사운드 풀을 이용하여 효과음 메소드 생성
-        mSoundPool = new SoundPool(20, AudioManager.STREAM_MUSIC, 0);
+        audioManager = (AudioManager) this.getSystemService(Context.AUDIO_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            createNewSoundPool();
+        }else{
+            createOldSoundPool();
+        }
         try {
             AssetManager assetManager = getAssets();
             AssetFileDescriptor descriptorBtn = assetManager.openFd("button01.ogg");
             mSoundButton = mSoundPool.load(descriptorBtn, 1);
         }
         catch(Exception exAsset){}
+    }
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    protected void createNewSoundPool(){
+        AudioAttributes attributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_GAME)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build();
+        mSoundPool = new SoundPool.Builder()
+                .setAudioAttributes(attributes)
+                .build();
+    }
+    @SuppressWarnings("deprecation")
+    protected void createOldSoundPool(){
+        mSoundPool = new SoundPool(20,AudioManager.STREAM_MUSIC,0);
     }
 
     public BufferedReader getAssetFile(String filename) {

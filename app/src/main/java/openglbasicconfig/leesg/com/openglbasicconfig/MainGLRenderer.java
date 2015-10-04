@@ -70,6 +70,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     //3D 오브젝트
     Mesh mMissile;
     Planet mUser;
+    Sphere mSpaceMap;
     // 파티클 시스템
     ParticleSystem mParticleSystem;
     int particleTextureHandle[] = new int[1];
@@ -213,6 +214,9 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mStage[0].planetList[1] = new Planet(mProgramImage, 1.0f, 0.1f, 0.2f, 0.1f, 1, 1, 0.0001f, 1.0f, temp);
         mStage[0].planetList[2] = new Planet(mProgramImage, 2.0f, 0.1f, 0.1f, 1.3f, 1, 1, 0.0001f, 1.0f, temp);
         mStage[0].planetList[3] = new Planet(mProgramImage, 3.0f, 0.1f, 0.03f, 0.6f, 1, 1, 0.0001f, 1.0f, temp);
+
+        mSpaceMap = new Sphere(mProgramImage);
+        mSpaceMap.flip();
         setResourceStage();
     }
     private void initIntroScreen() {
@@ -305,6 +309,8 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mStage[0].planetList[1].setBitmap(planetTexureHandle[0], 1024, 512, 36);
         mStage[0].planetList[2].setBitmap(planetTexureHandle[0], 1024, 512, 36);
         mStage[0].planetList[3].setBitmap(planetTexureHandle[0], 1024, 512, 36);
+
+        mSpaceMap.setBitmap(mBitmapLoader.getImageHandle("drawable/milkyafter", true), 1600, 859, 18);
     }
     private void setResourceIntroScreen() {
         mIntroScreen.setBitmap(mBitmapLoader.getImageHandle("drawable/intro", false), mScreenConfig.getmVirtualWidth(), mScreenConfig.getmVirtualHeight());
@@ -487,13 +493,38 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
 
         //**************************************************************************************************************************************************************
         // Render 3D
-        // fboId에 전체Scene을 저장
-        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, fboId);
-        GLES20.glViewport(0, 0, fboWidth, fboHeight);
+        // fboScene에 전체Scene을 저장
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, fboScene);
+//        GLES20.glViewport(0, 0, fboWidth, fboHeight);
+        GLES20.glViewport(0, 0, fboSceneWidth, fboSceneHeight);
         GLES20.glUseProgram(mProgramImage);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+        // sky sphere
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_NORMAL);
+        Matrix.setIdentityM(tempMatrix, 0);
+        Matrix.setIdentityM(mModelMatrix, 0);
+        float scaleVal = mCamera.lenghToEye() / 250.0f;
+        scaleVal *= 6.0f;
+        Matrix.scaleM(tempMatrix, 0, scaleVal, scaleVal, scaleVal);
+        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.setIdentityM(tempMatrix, 0);
+        Matrix.translateM(tempMatrix, 0, mCamera.at[0], mCamera.at[1], mCamera.at[2]);
+        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+
+        Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
+
+        GLES20.glEnable(GLES20.GL_CULL_FACE);
+        GLES20.glCullFace(GLES20.GL_FRONT);
+        GLES20.glEnable(GLES20.GL_TEXTURE_2D);
+        mSpaceMap.draw(mMVPMatrix);
+        GLES20.glDisable(GLES20.GL_TEXTURE_2D);
+        //GLES20.glCullFace(GLES20.GL_BACK);
+        //GLES20.glDisable(GLES20.GL_CULL_FACE);
+        //GLES20.glEnable(GLES20.GL_CULL_FACE);
+        //GLES20.glCullFace(GLES20.GL_FRONT_AND_BACK);
 
         //행성
         //model matrix 계산
@@ -521,7 +552,9 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             Matrix.multiplyMM(mModelViewMatrix, 0, mCamera.viewMatrix, 0, mModelMatrix, 0);
             Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
             GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(mProgramImage, "modelViewMatrix"), 1, false, mModelViewMatrix, 0);
+            //GLES20.glEnable(GLES20.GL_TEXTURE_2D);
             mStage[ConstMgr.STAGE].planetList[i].draw(mMVPMatrix);
+            //GLES20.glDisable(GLES20.GL_TEXTURE_2D);
         }
 
         // 파티클 시스템
@@ -542,8 +575,10 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                     }
                 }
                 GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "life"), ConstMgr.PARTICLE_LIFE);
+                GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "pointSize"), mDeviceWidth / mCamera.lenghToEye() * 2);
                 GLES20.glDisable(GLES20.GL_DEPTH_TEST);
                 mParticleSystem.draw(pv);
+                GLES20.glEnable(GLES20.GL_DEPTH_TEST);
             }
         }
         // 미사일 조준 궤도
@@ -559,16 +594,17 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
         //**************************************************************************************************************************************************************
         GLES20.glDisable(GLES20.GL_DEPTH_TEST);
+        GLES20.glDisable(GLES20.GL_CULL_FACE);
         // render 3D Scene with Bloom effect of sun
         GLES20.glViewport(0, 0, mDeviceWidth, mDeviceHeight);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_BLOOM);
         mRTT.setPos(mScreenConfig.getmVirtualWidth() / 2, mScreenConfig.getmVirtualHeight() / 2);
         mRTT.setSize(mScreenConfig.getmVirtualWidth(), mScreenConfig.getmVirtualHeight());
         mRTT.drawWithoutTex(orth);
-        GLES20.glUseProgram(mProgramImage);
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, fboTex);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, fboTexScene);
         GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "TEX"), 0);
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
@@ -694,8 +730,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                             for( int j = 0 ; j < mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getCannonListSize() ; j++) {
                                 mMissileButton[j].setIsActive(true);
                             }
-
-                            //initStage(ConstMgr.STAGE);
+                            Log.e("","" + mCamera.lenghToEye());
                             ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_GAME;
                             startTime = mLastTime;
                         }
@@ -709,6 +744,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                     }
                 }
             }
+            // 게임중 이벤트
         } else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_GAME) {
             switch (action) {
                 case MotionEvent.ACTION_DOWN:
@@ -987,11 +1023,13 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
 
     //********************************************************************************************************
     //FBO
-    private int fboId, fboIdStep1, fboIdStep2;
-    private int fboTex, fboTexStep1, fboTexStep2;
-    private int renderBufferId, renderBufferIdStep1, renderBufferIdStep2;
-    private int fboWidth = 512;
-    private int fboHeight = 512;
+    private int fboId, fboIdStep1, fboIdStep2, fboScene;
+    private int fboTex, fboTexStep1, fboTexStep2, fboTexScene;
+    private int renderBufferId, renderBufferIdStep1, renderBufferIdStep2, renderBufferScene;
+    private int fboWidth = 256;
+    private int fboHeight = 256;
+    private int fboSceneWidth;
+    private int fboSceneHeight;
     public int InitiateFrameBuffer(int fbo, int tex, int rid)
     {
         //Bind Frame buffer
@@ -1018,6 +1056,34 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
         return tex;
     }
+
+    public int InitiateFrameBuffer(int fbo, int tex, int rid, int texWidth, int texHeight)
+    {
+        //Bind Frame buffer
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, fbo);
+        //Bind texture
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, tex);
+        //Define texture parameters
+        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, texWidth, texHeight, 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null);
+
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+        //Bind render buffer and define buffer dimension
+        GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER, rid);
+        GLES20.glRenderbufferStorage(GLES20.GL_RENDERBUFFER, GLES20.GL_DEPTH_COMPONENT16, texWidth, texHeight);
+        //Attach texture FBO color attachment
+        GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, tex, 0);
+        //Attach render buffer to depth attachment
+        GLES20.glFramebufferRenderbuffer(GLES20.GL_FRAMEBUFFER, GLES20.GL_DEPTH_ATTACHMENT, GLES20.GL_RENDERBUFFER, rid);
+        //we are done, reset
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+        GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER, 0);
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+        return tex;
+    }
+
     private int[] initFBO() {
         int[] temp = new int[1];
         int[] ret = new int[2];
@@ -1049,18 +1115,27 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         fboTexStep2 = temp[0];
         GLES20.glGenRenderbuffers(1, temp, 0);
         renderBufferIdStep2 = temp[0];
-        int finalTex = InitiateFrameBuffer(fboIdStep2, fboTexStep2, renderBufferIdStep2);
+        InitiateFrameBuffer(fboIdStep2, fboTexStep2, renderBufferIdStep2);
 
-        ret[0] = rtt;
-        ret[1] = finalTex;
+        // whole scene
+        fboSceneWidth = mDeviceWidth;
+        fboSceneHeight = mDeviceHeight;
+        GLES20.glGenFramebuffers(1, temp, 0);
+        fboScene = temp[0];
+        GLES20.glGenTextures(1, temp, 0);
+        fboTexScene = temp[0];
+        GLES20.glGenRenderbuffers(1, temp, 0);
+        renderBufferScene = temp[0];
+        InitiateFrameBuffer(fboScene, fboTexScene, renderBufferScene, fboSceneWidth, fboSceneHeight);
+
 
         //init texture square
-        mRTT = new RTTQuad(mProgramImage, this);
+        mRTT = new RTTQuad(mProgramImage);
         mRTT.setIsActive(true);
-        mRTT.setPos(mScreenConfig.getmVirtualWidth() / 4, mScreenConfig.getmVirtualHeight() / 4 );
+        mRTT.setPos(mScreenConfig.getmVirtualWidth() / 4, mScreenConfig.getmVirtualHeight() / 4);
         mRTT.setSize(mScreenConfig.getmVirtualWidth()/2, mScreenConfig.getmVirtualHeight()/2);
 
-        mBlur = new RTTQuad(mProgramBlur, this);
+        mBlur = new RTTQuad(mProgramBlur);
         mBlur.setIsActive(true);
         mBlur.setPos(mScreenConfig.getmVirtualWidth() / 2, mScreenConfig.getmVirtualHeight() / 2);
         mBlur.setSize(mScreenConfig.getmVirtualWidth()   , mScreenConfig.getmVirtualHeight()  );

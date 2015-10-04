@@ -160,6 +160,13 @@ public class Camera {
         setViewMatrix();
     }
 
+    public float lenghToEye() {
+        float x = eye[0]-at[0];
+        float y = eye[1]-at[1];
+        float z = eye[2]-at[2];
+        return (float)(Math.sqrt((double)(x*x + y*y + z*z)));
+    }
+
     public void setRotateY(float a){
         /*
         float[] tempMatrix = new float[16];

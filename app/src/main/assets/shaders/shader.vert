@@ -21,16 +21,12 @@ uniform mat4 modelViewMatrix;
 uniform float renderMode;
 uniform int frame;
 uniform int life;
-
-
-
-
-
+uniform float pointSize;
 
 
     void main() {
         if(renderMode == 1.0) {
-            gl_PointSize = 2.0;
+            gl_PointSize = pointSize;
             if(int(birthFrame) + life < frame) {
                 v_color = vec3(0, 0, 0);
             } else {
@@ -38,7 +34,7 @@ uniform int life;
                 v_color = vec3(color.x*age, color.y*age, color.z*age);
             }
             alpha = 0.0;
-            float move = (float(frame) - birthFrame) / 200.0;
+            float move = (float(frame) - birthFrame) / 500.0;
             vec3 velocity = vec3(normal.x*move, normal.y*move, normal.z*move);
             gl_Position = uMVPMatrix * vec4(position + velocity, 1);
         } else {
