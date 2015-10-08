@@ -35,6 +35,8 @@ public class Sphere {
     // 이미지의 가로 세로 설정
     private float mWidth = 0;
     private float mHeight = 0;
+    // 행성 y축 회전값
+    private float rotateY = 0;
 
     public Sphere(int programImage) {
         mProgramImage = programImage;
@@ -131,6 +133,10 @@ public class Sphere {
         }
         //mIndexBuffer.position(0);
     }
+
+    public void setRotateY(float rotateY) { this.rotateY = rotateY; }
+    public float getRotateY() { return rotateY; }
+    public void addRotateY(float add) { this.rotateY += add; }
 
     //그리기
     public void draw(float[] m) {

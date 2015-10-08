@@ -8,12 +8,16 @@ public class ConstMgr {
     public final static int SCREEN_INTRO = 1;
     public final static int SCREEN_STAGE = 2;
     public final static int SCREEN_GAME = 3;
-    public final static int SCREEN_TEST = 4;
+    public final static int SCREEN_MAIN = 4;
+    public final static int SCREEN_EQUIP = 5;
+    public final static int SCREEN_SHOP = 6;
+    public final static int SCREEN_TEST = 10;
     //미사일 모드
     public final static int MISSILE_NOTHING = 0;
     public final static int MISSILE_STANDARD = 1;
     //쉴드등등 추가
     //버튼수
+    public final static int MAINBUTTON_NUM= 3;
     public final static int INTROBUTTON_NUM = 2;
     public final static int STAGEBUTTON_NUM = 1;
     //현재 화면의 모드

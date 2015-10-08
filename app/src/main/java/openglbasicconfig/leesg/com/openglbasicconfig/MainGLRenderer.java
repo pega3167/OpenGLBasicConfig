@@ -54,9 +54,13 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     // 화면 이미지
     Square mIntroScreen;
     Square mStageScreen;
+    Square mMainScreen;
     Square mScreenQuad;
+    // UI 아이콘
+    Square mGoldIcon;
     // 화면 버튼
     Button mIntroButtons[];
+    Button mMainButtons[];
     Button mStageButtons[];
     Button mShootButton;
     Button mMissileButton[];
@@ -144,6 +148,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         initUser();
         initStage();
         initIntroScreen();
+        initMainScreen();
         initStageScreen();
         initGameScreen();
         initPopup();
@@ -235,6 +240,29 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         }
         setResourceIntroScreen();
     }
+    private void initMainScreen() {
+        // 게임 틀
+        mMainScreen = new Square(mProgramImage);
+        mMainScreen.setPos(mScreenConfig.getmVirtualWidth()/2, mScreenConfig.getmVirtualHeight()/2);
+        mMainScreen.setIsActive(true);
+        //버튼
+        mMainButtons = new Button[ConstMgr.MAINBUTTON_NUM];
+        for(int i = 0 ; i < ConstMgr.MAINBUTTON_NUM; i++) {
+            mMainButtons[i] = new Button(mProgramImage, mProgramSolidColor, this);
+        }
+        mMainButtons[0].setIsActive(true);
+        mMainButtons[0].setPos((float) mScreenConfig.getmVirtualWidth() * 29.0f / 32.0f, mScreenConfig.getmVirtualHeight() / 4);
+        mMainButtons[1].setIsActive(true);
+        mMainButtons[1].setPos(mScreenConfig.getmVirtualWidth() / 4, mScreenConfig.getmVirtualHeight() / 5);
+        mMainButtons[2].setIsActive(true);
+        mMainButtons[2].setPos((float)mScreenConfig.getmVirtualWidth() / 8, mScreenConfig.getmVirtualHeight() / 5);
+        //UI 아이콘
+        mGoldIcon = new Square(mProgramImage);
+        mGoldIcon.setIsActive(true);
+        mGoldIcon.setPos(mScreenConfig.getmVirtualWidth() / 2, mScreenConfig.getmVirtualHeight() - mScreenConfig.getmVirtualHeight() / 12);
+
+        setResourceMainScreen();
+    }
     private void initStageScreen() {
         //initialize screen
         mStageScreen = new Square(mProgramImage);
@@ -317,6 +345,13 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         for(int i = 0; i < ConstMgr.INTROBUTTON_NUM ; i++) {
             mIntroButtons[i].setBitmap(mBitmapLoader.getImageHandle("drawable/button" + i, false), mScreenConfig.getmVirtualWidth() / 5, mScreenConfig.getmVirtualHeight() / 5);
         }
+    }
+    private void setResourceMainScreen() {
+        mMainScreen.setBitmap(mBitmapLoader.getImageHandle("drawable/mainscreen", true), mScreenConfig.getmVirtualWidth(), mScreenConfig.getmVirtualHeight());
+        mMainButtons[0].setBitmap(mBitmapLoader.getImageHandle("drawable/launch", false), mScreenConfig.getmVirtualWidth() / 6, mScreenConfig.getmVirtualHeight() * 8 / 27);
+        mMainButtons[1].setBitmap(mBitmapLoader.getImageHandle("drawable/shop",false), mScreenConfig.getmVirtualWidth()/8, mScreenConfig.getmVirtualHeight()*2/9);
+        mMainButtons[2].setBitmap(mBitmapLoader.getImageHandle("drawable/equip",false), mScreenConfig.getmVirtualWidth()/8, mScreenConfig.getmVirtualHeight()*2/9);
+        mGoldIcon.setBitmap(mBitmapLoader.getImageHandle("drawable/goldcoin", false),mScreenConfig.getmVirtualWidth()/32, mScreenConfig.getmVirtualHeight()/18);
     }
     private void setResourceStageScreen() {
         mStageScreen.setBitmap(mBitmapLoader.getImageHandle("drawable/stagescreen", false), mScreenConfig.getmVirtualWidth(), mScreenConfig.getmVirtualHeight());
@@ -406,18 +441,37 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                 mStage[ConstMgr.STAGE].currentFrame += mStage[ConstMgr.STAGE].turn * ConstMgr.FRAME_PER_TURN;
             }
         }
-
-        if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_INTRO)
-            RenderIntro(mMtrxProjectionAndView, mMtrxOrthoAndView);
-        else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_STAGE)
-            RenderStage(mMtrxProjectionAndView, mMtrxOrthoAndView);
-        else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_GAME) {
-            if (frame != tempFrame) { update(); }
-            RenderGame(mMtrxProjectionAndView, mMtrxOrthoAndView);
-        } else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_TEST) {
-            if (frame != tempFrame) {update();}
-            RenderTest(mMtrxProjectionAndView, mMtrxOrthoAndView);
+        switch(ConstMgr.SCREEN_MODE) {
+            case ConstMgr.SCREEN_INTRO : {
+                RenderIntro(mMtrxProjectionAndView, mMtrxOrthoAndView); break;
+            }
+            case ConstMgr.SCREEN_MAIN : {
+                RenderMain(mMtrxProjectionAndView, mMtrxOrthoAndView); break;
+            }
+            case ConstMgr.SCREEN_STAGE : {
+                RenderStage(mMtrxProjectionAndView, mMtrxOrthoAndView); break;
+            }
+            case ConstMgr.SCREEN_GAME : {
+                if (frame != tempFrame) { update(); }
+                RenderGame(mMtrxProjectionAndView, mMtrxOrthoAndView); break;
+            }
+            case ConstMgr.SCREEN_TEST : {
+                if (frame != tempFrame) {update();}
+                RenderTest(mMtrxProjectionAndView, mMtrxOrthoAndView); break;
+            }
         }
+
+//        if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_INTRO)
+//            RenderIntro(mMtrxProjectionAndView, mMtrxOrthoAndView);
+//        else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_STAGE)
+//            RenderStage(mMtrxProjectionAndView, mMtrxOrthoAndView);
+//        else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_GAME) {
+//            if (frame != tempFrame) { update(); }
+//            RenderGame(mMtrxProjectionAndView, mMtrxOrthoAndView);
+//        } else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_TEST) {
+//            if (frame != tempFrame) {update();}
+//            RenderTest(mMtrxProjectionAndView, mMtrxOrthoAndView);
+//        }
         mLastTime = now;
     }
     //초기화면
@@ -434,6 +488,55 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mPopup.draw(orth);
         //setRenderTexture(filterBuf1, renderTex1);
         //DrawQuad();
+    }
+    //메인화면
+    private void RenderMain(float[] pv, float[] orth) {
+
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_NORMAL);
+
+        GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+        float[] tempMatrix = new float[16];
+        // sky sphere
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_NORMAL);
+        Matrix.setIdentityM(tempMatrix, 0);
+        Matrix.setIdentityM(mModelMatrix, 0);
+        float scaleVal = mCamera.lenghToEye() / 250.0f;
+        scaleVal *= 6.0f;
+        Matrix.scaleM(tempMatrix, 0, scaleVal, scaleVal, scaleVal);
+        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.setIdentityM(tempMatrix, 0);
+        Matrix.translateM(tempMatrix, 0, mCamera.at[0], mCamera.at[1], mCamera.at[2]);
+        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+
+        Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
+
+        GLES20.glEnable(GLES20.GL_CULL_FACE);
+        GLES20.glCullFace(GLES20.GL_FRONT);
+        //GLES20.glEnable(GLES20.GL_TEXTURE_2D);
+        mSpaceMap.draw(mMVPMatrix);
+        GLES20.glDisable(GLES20.GL_CULL_FACE);
+        //GLES20.glDisable(GLES20.GL_TEXTURE_2D);
+        // user행성
+        Matrix.setIdentityM(tempMatrix, 0);
+        Matrix.setIdentityM(mModelMatrix, 0);
+        Matrix.rotateM(tempMatrix, 0, 90, 1.0f, 0.0f, 0.0f);
+        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.setIdentityM(tempMatrix, 0);
+        Matrix.rotateM(tempMatrix, 0, 45 + mUser.getRotateY(), 0.0f, 0.0f, 1.0f);
+        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
+        mUser.draw(mMVPMatrix);
+
+        GLES20.glDisable(GLES20.GL_DEPTH_TEST);
+        mMainScreen.draw(orth);
+        mGoldIcon.draw(orth);
+
+        for(int i = 0 ; i < ConstMgr.MAINBUTTON_NUM ; i++) {
+            mMainButtons[i].draw(orth);
+        }
     }
     //스테이지 선택 화면
     private void RenderStage(float[] pv, float[] orth) {
@@ -641,6 +744,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mParticleSystem.addParticle(frame, color);
         GLES20.glUniform1i(GLES20.glGetUniformLocation(mProgramImage, "life"), ConstMgr.PARTICLE_LIFE);
         GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_PARTICLE_SYSTEM);
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "pointSize"), mDeviceWidth / mCamera.lenghToEye() * 2);
         mParticleSystem.draw(pv);
 
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
@@ -695,6 +799,8 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     float py=1.f;
     float distance = 1.f;
     boolean aiming = false;
+    boolean rotating = false;
+    float startingAngle = 0.0f;
 
     private int mPointerId;
     public boolean onTouchEvent(MotionEvent event) {
@@ -711,14 +817,46 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                             mPopup.setIsActive(false);
                         }
                     }else if(mIntroButtons[0].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
-                        ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_STAGE;
+                        ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_MAIN;
                     }else if(mIntroButtons[1].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
                         mPopup.setMode(ConstMgr.POPUP_MODE_EXIT_APP);
                         mPopup.setIsActive(true);
                     }
                 }
             }
-        } else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_STAGE) {
+        } else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_MAIN) {
+            //메인 화면 이벤트
+            switch (action) {
+                case MotionEvent.ACTION_DOWN: {
+                    if(mMainButtons[0].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
+                        ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_STAGE;
+                    } else if (mMainButtons[1].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
+                        //ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_SHOP;
+                    } else if (mMainButtons[2].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
+                        //ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_EQUIP;
+                    } else {
+                        rotating = true;
+                        px = mScreenConfig.deviceToVirtualX(x);
+                        startingAngle = mUser.getRotateY();
+                    }
+                    break;
+                }
+                case MotionEvent.ACTION_MOVE : {
+                    if (rotating) {
+                        x1 = mScreenConfig.deviceToVirtualX(x);
+                        mUser.setRotateY(startingAngle + (px - x1) / (float) mScreenConfig.getmVirtualWidth() * 360.0f);
+                    }
+                    break;
+                }
+                case MotionEvent.ACTION_UP: {
+                    rotating = false;
+                    break;
+                }
+                case MotionEvent.ACTION_POINTER_DOWN: {
+
+                }
+            }
+        }else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_STAGE) {
             //스테이지 선택창 이벤트
             switch(action) {
                 case MotionEvent.ACTION_DOWN: {
@@ -730,17 +868,16 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                             for( int j = 0 ; j < mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getCannonListSize() ; j++) {
                                 mMissileButton[j].setIsActive(true);
                             }
-                            Log.e("","" + mCamera.lenghToEye());
                             ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_GAME;
                             startTime = mLastTime;
                         }
                     }
                     if(mBackButton.isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
-                        Vector3f pos = new Vector3f(0,0,0);
-                        mParticleSystem.addEmitter(pos, pos);
-                        mParticleSystem.activate();
-                        startTime = mLastTime;
-                        ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_TEST;
+//                        Vector3f pos = new Vector3f(0,0,0);
+//                        mParticleSystem.addEmitter(pos, pos);
+//                        mParticleSystem.activate();
+//                        startTime = mLastTime;
+                        ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_MAIN;
                     }
                 }
             }
