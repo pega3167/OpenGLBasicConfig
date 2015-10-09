@@ -59,7 +59,7 @@ public class Square {
         mSamplerLoc = GLES20.glGetUniformLocation(mProgramImage, "TEX");
     }
     // 이미지 핸들, 가로, 세로 값을 받아와 설정
-    public void setBitmap(int handle, int width, int height) {
+    public void setBitmap(int handle, float width, float height) {
         mBitmapCount = 1;
         this.mWidth = width;
         this.mHeight = height;
@@ -74,6 +74,10 @@ public class Square {
     // 이미지 위치 설정
     public void setPos(float posX, float posY) {
         this.mPosX = posX;
+        this.mPosY = posY;
+    }
+    public void setPosRight(float rightX, float posY) {
+        this.mPosX = rightX - this.mWidth/2;
         this.mPosY = posY;
     }
     //기울기를 설정함

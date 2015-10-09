@@ -27,4 +27,21 @@ public class MainGLSurfaceView extends GLSurfaceView {
         mRenderer.onTouchEvent(event);
         return true;
     }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        mRenderer.onPause();
+    }
+
+    public void onBackPressed() {
+        mRenderer.onBackPressed();
+        return;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        mRenderer.onResume();
+    }
 }
