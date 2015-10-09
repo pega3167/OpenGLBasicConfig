@@ -60,5 +60,7 @@ uniform float color_A;
             vec4 bloomcolor = clamp((src + dst) - (src * dst), 0.0, 1.0);
             gl_FragColor = bloomcolor;
             gl_FragColor.a = 1.0;
+        } else if (renderMode == 5.0) {
+            gl_FragColor = texture2D(TEX, gl_PointCoord);
         }
     }

@@ -205,5 +205,22 @@ public class Camera {
         //Matrix.multiplyMM(viewMatrix, 0, tempMatrix, 0, viewMatrix, 0);
         setViewMatrix();
     }
+    public boolean checkX(float a){
+        Vector3f a1 = new Vector3f(eye[0]-at[0],eye[1]-at[1],eye[2]-at[2]);
+        a1.normalize();
+        float temp = a1.dot(new Vector3f(0f,1f,0f));
+        if(temp>0){
+            if(Math.acos(temp)-(a*Math.PI/180)>0.01)
+                return true;
+            else
+                return false;
+        }
+        else{
+            if(Math.acos(temp)-(a*Math.PI/180)<3.13)
+                return true;
+            else
+                return false;
+        }
+    }
 }
 

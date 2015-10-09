@@ -79,6 +79,8 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     //3D 오브젝트
     Mesh mMissile;
     Sphere mSpaceMap;
+    orbital mOrb;
+    orbital_arrow mAOrb;
     // 유저 데이터
     UserData mUserData;
     Planet mUser;
@@ -210,6 +212,9 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         //initialize mesh
         mMissile = new Mesh(mProgramImage, mActivity);
         mMissile.loadOBJ("missile");
+        // 궤도와 궤도 화살표
+        mOrb = new orbital(mProgramImage);
+        mAOrb = new orbital_arrow(mProgramImage, 1);
         setResourceObject();
     }
     private void initUser() {
@@ -650,7 +655,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mSpaceMap.draw(mMVPMatrix);
         GLES20.glDisable(GLES20.GL_TEXTURE_2D);
         //GLES20.glCullFace(GLES20.GL_BACK);
-        //GLES20.glDisable(GLES20.GL_CULL_FACE);
+        GLES20.glDisable(GLES20.GL_CULL_FACE);
         //GLES20.glEnable(GLES20.GL_CULL_FACE);
         //GLES20.glCullFace(GLES20.GL_FRONT_AND_BACK);
 
@@ -683,7 +688,54 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             //GLES20.glEnable(GLES20.GL_TEXTURE_2D);
             mStage[ConstMgr.STAGE].planetList[i].draw(mMVPMatrix);
             //GLES20.glDisable(GLES20.GL_TEXTURE_2D);
+            // 행성 궤도!
+            GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_AIM);
+            Matrix.setIdentityM(tempMatrix, 0);
+            Matrix.setIdentityM(mModelMatrix, 0);
+            float radius = mStage[ConstMgr.STAGE].planetList[i].getOrbitRadius();
+            Matrix.scaleM(tempMatrix, 0, radius, radius, radius);
+            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+            Matrix.setIdentityM(tempMatrix, 0);
+            Matrix.rotateM(tempMatrix, 0, 90 + mStage[ConstMgr.STAGE].currentFrame * mStage[ConstMgr.STAGE].planetList[i].getRevolutionSpeed(), 0.0f, 1.0f, 0.0f);
+            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+            Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
+            mOrb.draw(mMVPMatrix);
+            // 궤도 방향 표시 화살표
+            GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_AIM);
+            Matrix.setIdentityM(tempMatrix, 0);
+            Matrix.setIdentityM(mModelMatrix, 0);
+            Matrix.scaleM(tempMatrix, 0, radius, radius, radius);
+            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+            Matrix.setIdentityM(tempMatrix, 0);
+//            radius -= 1.0f;
+//            Matrix.translateM(tempMatrix, 0, radius, 0, 0);
+//            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+//            Matrix.setIdentityM(tempMatrix, 0);
+            Matrix.rotateM(tempMatrix, 0, 88.5f + mStage[ConstMgr.STAGE].currentFrame * mStage[ConstMgr.STAGE].planetList[i].getRevolutionSpeed(), 0.0f, 1.0f, 0.0f);
+            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+            Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
+            mAOrb.draw(mMVPMatrix);
+            //mAOrb.setupVertexBuffer(mStage[ConstMgr.STAGE].planetList, i);
+            //mAOrb.draw(pv);
         }
+        // glpoint 예제
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), 5.0f);
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "pointSize"), 150.0f);
+        int positionLoc = GLES20.glGetAttribLocation(mProgramImage, "position");
+        int mtrxhandle = GLES20.glGetUniformLocation(mProgramImage, "uMVPMatrix");
+        ByteBuffer mPositions = (ByteBuffer.allocateDirect(1 * 3 * 4)).order(ByteOrder.nativeOrder());
+        FloatBuffer posBuffer = mPositions.asFloatBuffer();
+        posBuffer.put(0.0f); posBuffer.put(0.0f); posBuffer.put(0.0f);
+        posBuffer.position(0);
+        GLES20.glEnableVertexAttribArray(positionLoc);
+        GLES20.glVertexAttribPointer(positionLoc, 3, GLES20.GL_FLOAT, false, 0, posBuffer);
+        GLES20.glUniformMatrix4fv(mtrxhandle, 1, false, pv, 0);
+        GLES20.glEnable(GLES20.GL_BLEND);
+        GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, planetTexureHandle[0]);
+        GLES20.glDrawArrays(GLES20.GL_POINTS, 0, 1);
+        GLES20.glDisableVertexAttribArray(positionLoc);
 
         // 파티클 시스템
         GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_PARTICLE_SYSTEM);
@@ -997,13 +1049,23 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                             py = y1;
                             x1 = mScreenConfig.deviceToVirtualX((int) event.getX(0));  //////////////////////
                             y1 = mScreenConfig.deviceToVirtualY((int) event.getY(0));  //////////////////////
+//                            if (Math.abs(px - x1) > 2) {
+//                                mCamera.setRotateY((px - x1) / 2.0f);
+//                                Matrix.multiplyMM(mMtrxProjectionAndView, 0, mCamera.projectionMatrix, 0, mCamera.viewMatrix, 0);
+//                            }
+//                            if (Math.abs(py - y1) > 2) {
+//                                mCamera.setRotateX((y1 - py) / 2.0f);
+//                                Matrix.multiplyMM(mMtrxProjectionAndView, 0, mCamera.projectionMatrix, 0, mCamera.viewMatrix, 0);
+//                            }
                             if (Math.abs(px - x1) > 2) {
                                 mCamera.setRotateY((px - x1) / 2.0f);
                                 Matrix.multiplyMM(mMtrxProjectionAndView, 0, mCamera.projectionMatrix, 0, mCamera.viewMatrix, 0);
                             }
                             if (Math.abs(py - y1) > 2) {
-                                mCamera.setRotateX((y1 - py) / 2.0f);
-                                Matrix.multiplyMM(mMtrxProjectionAndView, 0, mCamera.projectionMatrix, 0, mCamera.viewMatrix, 0);
+                                if(mCamera.checkX((py - y1) / 2.0f)){
+                                    mCamera.setRotateX((py - y1) / 2.0f);
+                                    Matrix.multiplyMM(mMtrxProjectionAndView, 0, mCamera.projectionMatrix, 0, mCamera.viewMatrix, 0);
+                                }
                             }
                         } else if (aiming) {
                             if(ConstMgr.CANNON != ConstMgr.CANNON_NOTHING) {
