@@ -44,11 +44,20 @@ public class BitmapLoader {
 
     public int getHangulHandle(String text, int textSize, int fontColor, int canvasColor, float scale, int fontType) {
         bitmap = Bitmap.createBitmap(textSize * text.length(), textSize, Bitmap.Config.ARGB_8888);
-        wordLength = mHangulBitmap.GetBitmap(bitmap, text, textSize, fontColor, canvasColor, scale, fontType);
+        wordLength = mHangulBitmap.GetBitmap(bitmap, text, textSize, fontColor, canvasColor, scale, fontType, 0);
         imageHandle = getImageHandle(bitmap);
         bitmap.recycle();
         return imageHandle;
     }
+
+    public int getHangulHandle(String text, int textSize, int fontColor, int canvasColor, float scale, int fontType, int alignMode) {
+        bitmap = Bitmap.createBitmap(textSize * text.length(), textSize, Bitmap.Config.ARGB_8888);
+        wordLength = mHangulBitmap.GetBitmap(bitmap, text, textSize, fontColor, canvasColor, scale, fontType, alignMode);
+        imageHandle = getImageHandle(bitmap);
+        bitmap.recycle();
+        return imageHandle;
+    }
+
 
 
     public float getWordLength() {

@@ -13,6 +13,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.text.NumberFormat;
+import java.util.Locale;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -45,6 +47,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
 
     //주 액티비티
     MainActivity mActivity;
+    MainGLSurfaceView mGLSurfaceView;
     Context mContext;
     ScreenConfig mScreenConfig;
     BitmapLoader mBitmapLoader;
@@ -84,6 +87,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     // 유저 데이터
     UserData mUserData;
     Planet mUser;
+    boolean mUserGoldChanged = false;
     // 파티클 시스템
     ParticleSystem mParticleSystem;
     int particleTextureHandle[] = new int[1];
@@ -100,8 +104,9 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     //missile List
 
     //생성자
-    public MainGLRenderer(MainActivity activity, int width, int height) {
+    public MainGLRenderer(MainActivity activity, int width, int height, MainGLSurfaceView mainGLSurfaceView) {
         mActivity = activity;
+        mGLSurfaceView = mainGLSurfaceView;
         mContext = activity.getApplicationContext();
         mLastTime = System.currentTimeMillis() + 100;
         mDeviceWidth = width;
@@ -239,10 +244,10 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         Vector3f temp = new Vector3f();
         temp.setXYZ(0, 0, 0);
         mStage[0] = new Stage(mProgramImage, 4, 3);
-        mStage[0].planetList[0] = new Planet(mProgramImage, 0.0f, 0.5f, 0.0f, 0.0f, 1, 1, 0.0001f, 1.0f, temp);
+        mStage[0].planetList[0] = new Planet(mProgramImage, 0.0f, 0.5f, 0.0f, 0.0f, 1, 1, 0.0005f, 1.0f, temp);
         mStage[0].planetList[1] = new Planet(mProgramImage, 1.0f, 0.1f, 0.2f, 0.1f, 1, 1, 0.0001f, 1.0f, temp);
         mStage[0].planetList[2] = new Planet(mProgramImage, 2.0f, 0.1f, 0.1f, 1.3f, 1, 1, 0.0001f, 1.0f, temp);
-        mStage[0].planetList[3] = new Planet(mProgramImage, 3.0f, 0.1f, 0.03f, 0.6f, 1, 1, 0.0001f, 1.0f, temp);
+        mStage[0].planetList[3] = new Planet(mProgramImage, 3.0f, 0.1f, 0.03f, 0.6f, 1, 1, 0.0f, 1.0f, temp);
 
         mSpaceMap = new Sphere(mProgramImage);
         mSpaceMap.flip();
@@ -363,8 +368,8 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     }
     private void setResourceUser() {
         mUser.setBitmap(planetTexureHandle[0], 1024, 512, 36);
-        mGoldAmount.setBitmap(mBitmapLoader.getHangulHandle(Integer.toString(mUserData.getGold()), mScreenConfig.getmVirtualHeight()/12,Color.WHITE,-1,1.0f,mHangulBitmap.TRANSFORMERS), mBitmapLoader.getWordLength() * 1.2f, mScreenConfig.getmVirtualHeight()/12);
-        mGoldAmount.setPosRight(mScreenConfig.getmVirtualWidth() / 16 * 11, mScreenConfig.getmVirtualHeight() - mScreenConfig.getmVirtualHeight() / 15);
+        mGoldAmount.setBitmap(mBitmapLoader.getHangulHandle(Integer.toString(mUserData.getGold()), mScreenConfig.getmVirtualHeight() / 15, Color.WHITE, -1, 1.0f, mHangulBitmap.TRANSFORMERS, 1), mBitmapLoader.getWordLength(), mScreenConfig.getmVirtualHeight() / 15);
+        mGoldAmount.setPosRight(mScreenConfig.getmVirtualWidth() / 16 * 11, mScreenConfig.getmVirtualHeight() - mScreenConfig.getmVirtualHeight() / 12);
     }
     private void setResourceStage() {
         mStage[0].planetList[0].setBitmap(planetTexureHandle[1], 1024, 512, 36);
@@ -384,7 +389,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mMainScreen.setBitmap(mBitmapLoader.getImageHandle("drawable/mainscreen", true), mScreenConfig.getmVirtualWidth(), mScreenConfig.getmVirtualHeight());
         mMainButtons[0].setBitmap(mBitmapLoader.getImageHandle("drawable/launch", false), mScreenConfig.getmVirtualWidth() / 6, mScreenConfig.getmVirtualHeight() * 8 / 27);
         mMainButtons[1].setBitmap(mBitmapLoader.getImageHandle("drawable/shop",false), mScreenConfig.getmVirtualWidth()/8, mScreenConfig.getmVirtualHeight()*2/9);
-        mMainButtons[2].setBitmap(mBitmapLoader.getImageHandle("drawable/equip",false), mScreenConfig.getmVirtualWidth()/8, mScreenConfig.getmVirtualHeight()*2/9);
+        mMainButtons[2].setBitmap(mBitmapLoader.getImageHandle("drawable/equip", false), mScreenConfig.getmVirtualWidth() / 8, mScreenConfig.getmVirtualHeight() * 2 / 9);
         mGoldIcon.setBitmap(mBitmapLoader.getImageHandle("drawable/goldcoin", false),mScreenConfig.getmVirtualWidth()/32, mScreenConfig.getmVirtualHeight()/18);
     }
     private void setResourceStageScreen() {
@@ -413,10 +418,10 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         for(int i = 0 ; i < ConstMgr.POPUP_BUTTON_SIZE ; i++) {
             popupBtns[i].setBitmap(mBitmapLoader.getImageHandle("drawable/popup" + i, false),mScreenConfig.getmVirtualWidth()/5, (int)(mScreenConfig.getmVirtualWidth()/11.5));
         }
-        pauseWindow.setBitmap(mBitmapLoader.getImageHandle("drawable/pause", false), mScreenConfig.getmVirtualWidth() * 9 / 8, mScreenConfig.getmVirtualHeight()*3/2);
-        String[] pauseStrs = {"계속하기", "옵션","포기"};
+        pauseWindow.setBitmap(mBitmapLoader.getImageHandle("drawable/pause", false), mScreenConfig.getmVirtualWidth() * 9 / 8, mScreenConfig.getmVirtualHeight() * 3 / 2);
+        String[] pauseStrs = {"계속하기", "옵션","나가기"};
         for(int i = 0 ; i < 3 ; i ++) {
-            pauseBtns[i].setBitmap(mBitmapLoader.getHangulHandle(pauseStrs[i], mScreenConfig.getmVirtualHeight()/15,Color.WHITE,-1,1.0f), mBitmapLoader.getWordLength(), mScreenConfig.getmVirtualHeight()/15);
+            pauseBtns[i].setBitmap(mBitmapLoader.getHangulHandle(pauseStrs[i], mScreenConfig.getmVirtualHeight()/18,Color.WHITE,-1,1.0f,HangulBitmap.BMJUA), mBitmapLoader.getWordLength(), mScreenConfig.getmVirtualHeight()/18);
         }
     }
 
@@ -426,9 +431,14 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mLight.sendLight();
         mLight.sendMaterial();
         GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(mProgramImage, "viewMatrix"), 1, false, mCamera.viewMatrix, 0);
+        Vector3f color = new Vector3f(1,1,1);
+        mParticleSystem.addParticle(frame,color);
     }
     // 시뮬레이션 전에 하는일
     private void beforeSimul() {
+        for(int i = 0 ; i < 2 ; i++) {
+            mModeButton[i].setIsActive(false);
+        }
         for(int j = 0 ; j < mStage[ConstMgr.STAGE].listSize ; j++) {
             for(int k = 0 ; k < mStage[ConstMgr.STAGE].planetList[j].getCannonListSize(); k++) {
                 if(mStage[ConstMgr.STAGE].planetList[j].cannons[k].aim.getIsAimed()) {
@@ -445,6 +455,9 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     }
     // 시뮬레이션 후에 하는일
     private void afterSimul() {
+        for(int i = 0 ; i < 2 ; i++) {
+            mModeButton[i].setIsActive(true);
+        }
         mStage[ConstMgr.STAGE].turn += 1;
         mStage[ConstMgr.STAGE].currentFrame = (ConstMgr.FRAME_PER_TURN * mStage[ConstMgr.STAGE].turn );
         ConstMgr.RENDER_MODE = ConstMgr.RENDER_SETTING;
@@ -628,12 +641,20 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         // Render 3D
         // fboScene에 전체Scene을 저장
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, fboScene);
-//        GLES20.glViewport(0, 0, fboWidth, fboHeight);
+//        GLES20.glViewport(0, 0, mDeviceWidth, mDeviceHeight);
         GLES20.glViewport(0, 0, fboSceneWidth, fboSceneHeight);
         GLES20.glUseProgram(mProgramImage);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+
+
+        GLES20.glEnable(GLES20.GL_CULL_FACE);
+        GLES20.glCullFace(GLES20.GL_FRONT);
+        GLES20.glFrontFace(GLES20.GL_CCW);
+
+        GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 
         // sky sphere
         GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_NORMAL);
@@ -648,16 +669,10 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
 
         Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
-
-        GLES20.glEnable(GLES20.GL_CULL_FACE);
-        GLES20.glCullFace(GLES20.GL_FRONT);
-        GLES20.glEnable(GLES20.GL_TEXTURE_2D);
         mSpaceMap.draw(mMVPMatrix);
-        GLES20.glDisable(GLES20.GL_TEXTURE_2D);
-        //GLES20.glCullFace(GLES20.GL_BACK);
         GLES20.glDisable(GLES20.GL_CULL_FACE);
-        //GLES20.glEnable(GLES20.GL_CULL_FACE);
-        //GLES20.glCullFace(GLES20.GL_FRONT_AND_BACK);
+
+
 
         //행성
         //model matrix 계산
@@ -718,29 +733,38 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             //mAOrb.setupVertexBuffer(mStage[ConstMgr.STAGE].planetList, i);
             //mAOrb.draw(pv);
         }
-        // glpoint 예제
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), 5.0f);
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "pointSize"), 150.0f);
-        int positionLoc = GLES20.glGetAttribLocation(mProgramImage, "position");
-        int mtrxhandle = GLES20.glGetUniformLocation(mProgramImage, "uMVPMatrix");
-        ByteBuffer mPositions = (ByteBuffer.allocateDirect(1 * 3 * 4)).order(ByteOrder.nativeOrder());
-        FloatBuffer posBuffer = mPositions.asFloatBuffer();
-        posBuffer.put(0.0f); posBuffer.put(0.0f); posBuffer.put(0.0f);
-        posBuffer.position(0);
-        GLES20.glEnableVertexAttribArray(positionLoc);
-        GLES20.glVertexAttribPointer(positionLoc, 3, GLES20.GL_FLOAT, false, 0, posBuffer);
-        GLES20.glUniformMatrix4fv(mtrxhandle, 1, false, pv, 0);
-        GLES20.glEnable(GLES20.GL_BLEND);
-        GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, planetTexureHandle[0]);
-        GLES20.glDrawArrays(GLES20.GL_POINTS, 0, 1);
-        GLES20.glDisableVertexAttribArray(positionLoc);
+
+//        // glpoint 예제
+//        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), 5.0f);
+//        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "pointSize"), 150.0f);
+//        int positionLoc = GLES20.glGetAttribLocation(mProgramImage, "position");
+//        int mtrxhandle = GLES20.glGetUniformLocation(mProgramImage, "uMVPMatrix");
+//        ByteBuffer mPositions = (ByteBuffer.allocateDirect(1 * 3 * 4)).order(ByteOrder.nativeOrder());
+//        FloatBuffer posBuffer = mPositions.asFloatBuffer();
+//        posBuffer.put(0.0f); posBuffer.put(0.0f); posBuffer.put(0.0f);
+//        posBuffer.position(0);
+//        GLES20.glEnableVertexAttribArray(positionLoc);
+//        GLES20.glVertexAttribPointer(positionLoc, 3, GLES20.GL_FLOAT, false, 0, posBuffer);
+//        GLES20.glUniformMatrix4fv(mtrxhandle, 1, false, pv, 0);
+//        GLES20.glEnable(GLES20.GL_BLEND);
+//        GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+//        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+//        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, planetTexureHandle[0]);
+//        GLES20.glDrawArrays(GLES20.GL_POINTS, 0, 1);
+//        GLES20.glDisableVertexAttribArray(positionLoc);
+
+        // 미사일 조준 궤도
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_AIM);
+        if((ConstMgr.RENDER_MODE == ConstMgr.RENDER_SETTING) && (ConstMgr.TURN_MODE == ConstMgr.TURN_AIM)) {
+            for(int i = 0 ; i < mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getCannonListSize() ; i++) {
+                if( mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[i].aim.getIsAimed()) {
+                    mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[i].aim.draw(pv);
+                }
+            }
+        }
 
         // 파티클 시스템
         GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_PARTICLE_SYSTEM);
-        Vector3f color = new Vector3f(1,1,1);
-        mParticleSystem.addParticle(frame, color);
         if(ConstMgr.RENDER_MODE == ConstMgr.RENDER_ANIMATION) {
             int turnframe = mStage[ConstMgr.STAGE].currentFrame - mStage[ConstMgr.STAGE].turn * ConstMgr.FRAME_PER_TURN;
             if (turnframe < ConstMgr.FRAME_PER_TURN) {
@@ -759,15 +783,6 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                 GLES20.glDisable(GLES20.GL_DEPTH_TEST);
                 mParticleSystem.draw(pv);
                 GLES20.glEnable(GLES20.GL_DEPTH_TEST);
-            }
-        }
-        // 미사일 조준 궤도
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_AIM);
-        if((ConstMgr.RENDER_MODE == ConstMgr.RENDER_SETTING) && (ConstMgr.TURN_MODE == ConstMgr.TURN_AIM)) {
-            for(int i = 0 ; i < mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getCannonListSize() ; i++) {
-                if( mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[i].aim.getIsAimed()) {
-                    mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[i].aim.draw(pv);
-                }
             }
         }
 
@@ -793,6 +808,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mRTT.drawElements();
         //**************************************************************************************************************************************************************
         // Render UI
+        GLES20.glDisable(GLES20.GL_DEPTH_TEST);
         GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_NORMAL);
         //buttons
         //mBackButton.draw(orth);
@@ -896,6 +912,9 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                             mPopup.setIsActive(false);
                         }
                     }else if(mIntroButtons[0].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
+                        mCamera.setDefault();
+                        Matrix.multiplyMM(mMtrxProjectionAndView, 0, mCamera.projectionMatrix, 0, mCamera.viewMatrix, 0);
+                        Matrix.multiplyMM(mMtrxOrthoAndView, 0, mCamera.orthoProjectionMatrix, 0, mCamera.twoDViewMatrix, 0);
                         ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_MAIN;
                     }else if(mIntroButtons[1].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
                         mPopup.setMode(ConstMgr.POPUP_MODE_EXIT_APP);
@@ -912,12 +931,14 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                     } else if (mMainButtons[1].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
                         //ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_SHOP;
                         mUserData.setGold(mUserData.getGold() + 100);
+                        mUserGoldChanged = true;
+                        mGLSurfaceView.onUpdateCall();
+
                         mUserData.saveSaveData();
                     } else if (mMainButtons[2].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
-                        //ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_EQUIP;
-//                        mGoldAmount.setBitmap(mBitmapLoader.getHangulHandle(Integer.toString(mUserData.getGold()), mScreenConfig.getmVirtualHeight()/12,Color.WHITE,-1,1.0f,mHangulBitmap.TRANSFORMERS), mBitmapLoader.getWordLength() * 1.2f, mScreenConfig.getmVirtualHeight()/12);
-//                        mGoldAmount.setPosRight(mScreenConfig.getmVirtualWidth() / 16 * 11, mScreenConfig.getmVirtualHeight() - mScreenConfig.getmVirtualHeight() / 15);
-                        mUserData.loadSaveData();
+                        mUserData.setGold(100);
+                        mUserGoldChanged = true;
+                        mGLSurfaceView.onUpdateCall();
                     } else {
                         rotating = true;
                         px = mScreenConfig.deviceToVirtualX(x);
@@ -952,6 +973,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                             for( int j = 0 ; j < mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getCannonListSize() ; j++) {
                                 mMissileButton[j].setIsActive(true);
                             }
+                            mStage[ConstMgr.STAGE].turn = 0;
                             ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_GAME;
                             startTime = mLastTime;
                         }
@@ -961,6 +983,9 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
 //                        mParticleSystem.addEmitter(pos, pos);
 //                        mParticleSystem.activate();
 //                        startTime = mLastTime;
+                        mCamera.setDefault();
+                        Matrix.multiplyMM(mMtrxProjectionAndView, 0, mCamera.projectionMatrix, 0, mCamera.viewMatrix, 0);
+                        Matrix.multiplyMM(mMtrxOrthoAndView, 0, mCamera.orthoProjectionMatrix, 0, mCamera.twoDViewMatrix, 0);
                         ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_MAIN;
                     }
                 }
@@ -1247,6 +1272,9 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                 ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_INTRO;
                 break;
             } case ConstMgr.SCREEN_STAGE : {
+                mCamera.setDefault();
+                Matrix.multiplyMM(mMtrxProjectionAndView, 0, mCamera.projectionMatrix, 0, mCamera.viewMatrix, 0);
+                Matrix.multiplyMM(mMtrxOrthoAndView, 0, mCamera.orthoProjectionMatrix, 0, mCamera.twoDViewMatrix, 0);
                 ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_MAIN;
                 break;
             }case ConstMgr.SCREEN_GAME : {
@@ -1487,7 +1515,17 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
     }
 
-
+    public void updateGold() {
+        if(mUserGoldChanged) {
+            int temp = mUserData.getGold();
+            String tempStr = "";
+            tempStr = NumberFormat.getNumberInstance(Locale.US).format(temp);
+            Log.e("", tempStr);
+            mGoldAmount.setBitmap(mBitmapLoader.getHangulHandle(tempStr, mScreenConfig.getmVirtualHeight() / 15, Color.WHITE, -1, 1.0f, mHangulBitmap.TRANSFORMERS, 1), mBitmapLoader.getWordLength(), mScreenConfig.getmVirtualHeight() / 15);
+            mGoldAmount.setPosRight(mScreenConfig.getmVirtualWidth() / 16 * 11, mScreenConfig.getmVirtualHeight() - mScreenConfig.getmVirtualHeight() / 12);
+            mUserGoldChanged = false;
+        }
+    }
 
 
 

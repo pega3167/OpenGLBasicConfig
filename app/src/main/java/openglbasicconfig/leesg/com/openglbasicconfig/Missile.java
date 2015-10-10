@@ -81,23 +81,23 @@ public class Missile {
 
     // 업데이트 함수
     public boolean updateVelocity(Planet[] planetList, int listSize) {
-        float r;
-        float a;
+        double r;
+        double a;
         Vector3f direction = new Vector3f();
         for(int i = 0 ; i < listSize ; i++) {
             r = this.currentPos.distance( planetList[i].getCurrentPos() );
             if(r < planetList[i].getRadius()) {
                 return true;
             }
-            if( r < planetList[i].getGravityField() ) {
-                a = planetList[i].getGravity() / r*r;
-                direction.x = (planetList[i].getCurrentPos().x - this.currentPos.x) / r * a;
-                direction.y = (planetList[i].getCurrentPos().y - this.currentPos.y) / r * a;
-                direction.z = (planetList[i].getCurrentPos().z - this.currentPos.z) / r * a;
+            //if( r < planetList[i].getGravityField() ) {
+                a = planetList[i].getGravity() / (r*r);
+                direction.x = (float)((planetList[i].getCurrentPos().x - this.currentPos.x) / r * a);
+                direction.y = (float)((planetList[i].getCurrentPos().y - this.currentPos.y) / r * a);
+                direction.z = (float)((planetList[i].getCurrentPos().z - this.currentPos.z) / r * a);
                 velocity.x += direction.x;
                 velocity.y += direction.y;
                 velocity.z += direction.z;
-            }
+            //}
         }
         return false;
     }

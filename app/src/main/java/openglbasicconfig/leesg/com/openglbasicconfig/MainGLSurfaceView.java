@@ -16,7 +16,7 @@ public class MainGLSurfaceView extends GLSurfaceView {
         //OpenGL ES 2.0 context를 생성한다.
         setEGLContextClientVersion(2);
         //GLSurfaceView 를 사용하기 위해 Context 를 이용해 렌더러를 생성한다.
-        mRenderer = new MainGLRenderer(activity, width, height);
+        mRenderer = new MainGLRenderer(activity, width, height, this);
         setRenderer(mRenderer);
         //렌더모드 - 연속해서 그린다.
         setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
@@ -43,5 +43,14 @@ public class MainGLSurfaceView extends GLSurfaceView {
     public void onResume() {
         super.onResume();
         mRenderer.onResume();
+    }
+    public void onUpdateCall() {
+        queueEvent(new Runnable() {
+                       @Override
+                       public void run() {
+                           mRenderer.updateGold();
+                       }
+                   }
+        );
     }
 }

@@ -222,5 +222,12 @@ public class Camera {
                 return false;
         }
     }
+    public void setDefault() {
+        setEye(0, 250f,0);
+        setAt(0f, 0f, 0f);
+        setUp(0f, 0f, 1f);
+        setProjectionMatrix();
+        setViewMatrix();
+    }
 }
 

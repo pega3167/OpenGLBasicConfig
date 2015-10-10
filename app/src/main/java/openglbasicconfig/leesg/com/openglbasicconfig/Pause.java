@@ -20,7 +20,7 @@ public class Pause {
         button = buttons;
         button[0].setPos(virtWidth/2,virtHeight/4*3-virtHeight/18);
         button[1].setPos(virtWidth/2,virtHeight/2);
-        button[2].setPos(virtWidth/2,virtHeight/4+virtHeight/18);
+        button[2].setPos(virtWidth/2,virtHeight/4+virtHeight/20);
     }
     public void setIsActive(boolean isActive) {
         this.isActive = isActive;

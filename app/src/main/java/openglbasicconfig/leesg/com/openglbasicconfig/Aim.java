@@ -98,23 +98,23 @@ public class Aim {
         vertexBuffer.position(0);
     }
     private boolean updateVelocity(Planet[] planetList, int listSize, Vector3f currentPos) {
-        float r;
-        float a;
+        double r;
+        double a;
         Vector3f direction = new Vector3f();
         for(int i = 0 ; i < listSize ; i++) {
-            r = currentPos.distance( planetList[i].getCurrentPos() );
+            r = currentPos.distance( planetList[i].getCurrentPos() );// - planetList[i].getRadius();
             if(r < planetList[i].getRadius()) {
                 return true;
             }
-            else if( r < planetList[i].getGravityField() ) {
-                a = planetList[i].getGravity() / r*r;
-                direction.x = (planetList[i].getCurrentPos().x - currentPos.x) / r * a;
-                direction.y = (planetList[i].getCurrentPos().y - currentPos.y) / r * a;
-                direction.z = (planetList[i].getCurrentPos().z - currentPos.z) / r * a;
+            //if( r < planetList[i].getGravityField() ) {
+                a = planetList[i].getGravity() / (r*r);
+                direction.x = (float)((planetList[i].getCurrentPos().x - currentPos.x) / r * a);
+                direction.y = (float)((planetList[i].getCurrentPos().y - currentPos.y) / r * a);
+                direction.z = (float)((planetList[i].getCurrentPos().z - currentPos.z) / r * a);
                 currentVelocity.x += direction.x;
                 currentVelocity.y += direction.y;
                 currentVelocity.z += direction.z;
-            }
+            //}
         }
         return false;
     }
