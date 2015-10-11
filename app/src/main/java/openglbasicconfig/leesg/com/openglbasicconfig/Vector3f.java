@@ -90,6 +90,13 @@ public class Vector3f {
         result.z -= minVal.z;
         return result;
     }
+    public Vector3f plus(Vector3f addVal) {
+        Vector3f result = new Vector3f(this.x, this.y ,this.z);
+        result.x += addVal.x;
+        result.y += addVal.y;
+        result.z += addVal.z;
+        return result;
+    }
 
     boolean inverse(float[] matrix) {
         float _11, _12, _13, _14, _21, _22, _23, _24, _31, _32, _33, _34, _41, _42, _43, _44;
@@ -122,5 +129,13 @@ public class Vector3f {
         matrix[14] = (_11*_23*_42 + _12*_21*_43 + _13*_22*_41 - _11*_22*_43 - _12*_23*_41 - _13*_21*_42)/det;
         matrix[15] = (_11*_22*_33 + _12*_23*_31 + _13*_21*_32 - _11*_23*_32 - _12*_21*_33 - _13*_22*_31)/det;
         return true;
+    }
+    public static void setRotate(float[] a, Vector3f axis, float angle )
+    {
+        float c=(float)Math.cos(angle), s=(float)Math.sin(angle), x=axis.x, y=axis.y, z=axis.z;
+        a[0] = x*x*(1-c)+c;		a[4] = x*y*(1-c)-z*s;		a[8] = x*z*(1-c)+y*s;	a[12] = 0.0f;
+        a[1] = x*y*(1-c)+z*s;	a[5] = y*y*(1-c)+c;			a[9] = y*z*(1-c)-x*s;	a[13] = 0.0f;
+        a[2] = x*z*(1-c)-y*s;	a[6] = y*z*(1-c)+x*s;		a[10] = z*z*(1-c)+c;	a[14] = 0.0f;
+        a[3] = 0;				a[7] = 0;					a[11] = 0;				a[15] = 1.0f;
     }
 }

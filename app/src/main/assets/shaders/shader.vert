@@ -38,7 +38,7 @@ uniform float pointSize;
             vec3 velocity = vec3(normal.x*move, normal.y*move, normal.z*move);
             gl_Position = uMVPMatrix * vec4(position + velocity, 1);
         } else if (renderMode == 5.0) {
-            gl_PointSize = pointSize;
+            tc = texcoord;
             gl_Position = uMVPMatrix * vec4(position,1);
         } else {
             ecPos = modelViewMatrix * vec4(position, 1);
