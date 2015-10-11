@@ -24,11 +24,9 @@ import javax.microedition.khronos.opengles.GL10;
  */
 public class MainGLRenderer implements GLSurfaceView.Renderer {
     //매트릭스
-    private final float[] mMtrxProjectionAndView = new float[16]; // proj x view
-    private final float[] mMtrxOrthoAndView = new float[16];
-    private final float[] mModelMatrix = new float[16];
-    private final float[] mModelViewMatrix = new float[16];
-    private final float[] mMVPMatrix = new float[16]; //proj x view x model
+    private float[] mMtrxProjectionAndView = new float[16]; // proj x view
+    private float[] mMtrxOrthoAndView = new float[16];
+    private float[] mModelViewMatrix = new float[16];
     //프로그램
     private static int mProgramImage;
     private static int mProgramBlur;
@@ -64,6 +62,15 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     Square mGoldAmount;
     Square3D mBeacon;
     Vector3f mSelectPos;
+    // Inventory
+    Inventory mInven;
+    Square invenBG;
+    Square invenWF;
+    Square blankItem;
+    Square selectIcon;
+    Square equipIcon;
+    Button equipBtn;
+
     // 화면 버튼
     Button mIntroButtons[];
     Button mMainButtons[];
@@ -140,8 +147,8 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         // perspective
         mCamera.setProjectionMatrix();
         // perspective x lookat
-        Matrix.multiplyMM(mMtrxProjectionAndView, 0, mCamera.projectionMatrix, 0, mCamera.viewMatrix, 0);
-        Matrix.multiplyMM(mMtrxOrthoAndView, 0, mCamera.orthoProjectionMatrix, 0, mCamera.twoDViewMatrix, 0);
+//        Matrix.multiplyMM(mMtrxProjectionAndView, 0, mCamera.projectionMatrix, 0, mCamera.viewMatrix, 0);
+//        Matrix.multiplyMM(mMtrxOrthoAndView, 0, mCamera.orthoProjectionMatrix, 0, mCamera.twoDViewMatrix, 0);
 
         //update user info
 //        recoverResource();
@@ -157,6 +164,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         // 처음에만 초기화하고 인터럽트 발생 후에는 텍스쳐만 바인드 한다.
         if (mIsFirstCalled) {
             init();
+            ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_INTRO;
         } else {
             recoverResource();
         }
@@ -298,6 +306,16 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     private void initEquipScreen() {
         mSelectPos = new Vector3f();
         mBeacon = new Square3D(mProgramImage, 0.5f, 0.5f);
+        invenBG = new Square(mProgramImage);
+        invenWF = new Square(mProgramImage);
+        blankItem = new Square(mProgramImage);
+        selectIcon = new Square(mProgramImage);
+        equipIcon = new Square(mProgramImage);
+        equipBtn = new Button(mProgramImage, mProgramSolidColor, this);
+        mInven = new Inventory(invenBG, invenWF, blankItem, selectIcon, equipIcon, equipBtn,0, 10, mScreenConfig.getmVirtualWidth(), mScreenConfig.getmVirtualHeight());
+        mInven.setPos(mScreenConfig.getmVirtualWidth()/6.0f*5, mScreenConfig.getmVirtualHeight()/2);
+        mInven.setIsActive(true);
+
         setResourceEquipScreen();
     }
     private void initStageScreen() {
@@ -347,6 +365,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             popupBtns[i] = new Button(mProgramImage, mProgramSolidColor, this);
         }
         mPopup = new Popup(this, popupWindow, popupStr, popupBtns, mScreenConfig.getmVirtualWidth(), mScreenConfig.getmVirtualHeight());
+        mPopup.setIsActive(false);
         // 일시정지
         pauseWindow = new Square(mProgramImage);
         for(int i = 0 ; i < 3 ; i ++) {
@@ -387,7 +406,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mStage[0].planetList[2].setBitmap(planetTexureHandle[0], 1024, 512, 36);
         mStage[0].planetList[3].setBitmap(planetTexureHandle[0], 1024, 512, 36);
 
-        mSpaceMap.setBitmap(mBitmapLoader.getImageHandle("drawable/milkyafter", true), 1600, 859, 18);
+        mSpaceMap.setBitmap(mBitmapLoader.getImageHandle("drawable/milkyafter", true), 1600, 859, 36);
     }
     private void setResourceIntroScreen() {
         mIntroScreen.setBitmap(mBitmapLoader.getImageHandle("drawable/intro", false), mScreenConfig.getmVirtualWidth(), mScreenConfig.getmVirtualHeight());
@@ -414,12 +433,18 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         for ( int i = 0 ; i < 5 ; i++) {
             mMissileButton[i].setBitmap(mBitmapLoader.getImageHandle("drawable/missilebutton", false), mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
         }
-        mModeButton[0].setBitmap(mBitmapLoader.getImageHandle("drawable/button5", false), mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
-        mModeButton[1].setBitmap(mBitmapLoader.getImageHandle("drawable/button6", false), mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
-        mShootButton.setBitmap(mBitmapLoader.getImageHandle("drawable/launch", false), mScreenConfig.getmVirtualWidth() / 6, mScreenConfig.getmVirtualWidth() / 6);
+        mModeButton[0].setBitmap(mBitmapLoader.getImageHandle("drawable/button5", false), mScreenConfig.getmVirtualHeight() / 6.0f, mScreenConfig.getmVirtualHeight() / 6.0f);
+        mModeButton[1].setBitmap(mBitmapLoader.getImageHandle("drawable/button6", false), mScreenConfig.getmVirtualHeight() / 6.0f, mScreenConfig.getmVirtualHeight() / 6.0f);
+        mShootButton.setBitmap(mBitmapLoader.getImageHandle("drawable/launch", false), mScreenConfig.getmVirtualWidth() / 6.0f, mScreenConfig.getmVirtualWidth() / 6.0f);
     }
     private void setResourceEquipScreen() {
         mBeacon.setBitmap(mBitmapLoader.getImageHandle("drawable/beacon", false));
+        invenBG.setBitmap(mBitmapLoader.getImageHandle("drawable/inventory_back",false), mScreenConfig.getmVirtualWidth()/2.0f, mScreenConfig.getmVirtualHeight() / 9.0f * 8);
+        invenWF.setBitmap(mBitmapLoader.getImageHandle("drawable/inventory_frame",false), mScreenConfig.getmVirtualWidth()/2.0f, mScreenConfig.getmVirtualHeight() / 9.0f * 8);
+        blankItem.setBitmap(mBitmapLoader.getImageHandle("drawable/blank",false), mScreenConfig.getmVirtualWidth()/16.0f, mScreenConfig.getmVirtualHeight()/9.0f);
+        selectIcon.setBitmap(mBitmapLoader.getImageHandle("drawable/select",false), mScreenConfig.getmVirtualWidth()/16.0f, mScreenConfig.getmVirtualHeight()/9.0f);
+        equipIcon.setBitmap(mBitmapLoader.getImageHandle("drawable/used",false), mScreenConfig.getmVirtualWidth()/16.0f, mScreenConfig.getmVirtualHeight()/9.0f);
+        equipBtn.setBitmap(mBitmapLoader.getImageHandle("drawable/buttonequip", false), mScreenConfig.getmVirtualWidth()/32.0f * 5, mScreenConfig.getmVirtualHeight()/9.0f);
     }
     private void setResourcePopup() {
         popupWindow.setBitmap(mBitmapLoader.getImageHandle("drawable/popup", false), mScreenConfig.getmVirtualWidth() * 3 / 4, mScreenConfig.getmVirtualHeight() * 3 / 4);
@@ -560,36 +585,37 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
 
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         float[] tempMatrix = new float[16];
+        float[] modelMatrix = new float[16];
         // sky sphere
         GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_NORMAL);
         Matrix.setIdentityM(tempMatrix, 0);
-        Matrix.setIdentityM(mModelMatrix, 0);
+        Matrix.setIdentityM(modelMatrix, 0);
         float scaleVal = mCamera.lenghToEye() / 250.0f;
         scaleVal *= 6.0f;
         Matrix.scaleM(tempMatrix, 0, scaleVal, scaleVal, scaleVal);
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
         Matrix.setIdentityM(tempMatrix, 0);
         Matrix.translateM(tempMatrix, 0, mCamera.at[0], mCamera.at[1], mCamera.at[2]);
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
 
-        Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
+        Matrix.multiplyMM(modelMatrix, 0, pv, 0, modelMatrix, 0);
 
         GLES20.glEnable(GLES20.GL_CULL_FACE);
         GLES20.glCullFace(GLES20.GL_FRONT);
         //GLES20.glEnable(GLES20.GL_TEXTURE_2D);
-        mSpaceMap.draw(mMVPMatrix);
+        mSpaceMap.draw(modelMatrix);
         GLES20.glDisable(GLES20.GL_CULL_FACE);
         //GLES20.glDisable(GLES20.GL_TEXTURE_2D);
         // user행성
         Matrix.setIdentityM(tempMatrix, 0);
-        Matrix.setIdentityM(mModelMatrix, 0);
+        Matrix.setIdentityM(modelMatrix, 0);
         Matrix.rotateM(tempMatrix, 0, 90, 1.0f, 0.0f, 0.0f);
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
         Matrix.setIdentityM(tempMatrix, 0);
         Matrix.rotateM(tempMatrix, 0, 45 - mUser.getRotateY(), 0.0f, 0.0f, 1.0f);
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
-        Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
-        mUser.draw(mMVPMatrix);
+        Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
+        Matrix.multiplyMM(modelMatrix, 0, pv, 0, modelMatrix, 0);
+        mUser.draw(modelMatrix);
 
         GLES20.glDisable(GLES20.GL_DEPTH_TEST);
         mMainScreen.draw(orth);
@@ -619,6 +645,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         float[] tempMatrix = new float[16];
+        float[] modelMatrix = new float[16];
         Vector3f temp = new Vector3f();
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         //**************************************************************************************************************************************************************
@@ -631,26 +658,26 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         //mMVPMatrix 계산
         Matrix.setIdentityM(tempMatrix, 0);
-        Matrix.setIdentityM(mModelMatrix, 0);
+        Matrix.setIdentityM(modelMatrix, 0);
         Matrix.scaleM(tempMatrix, 0, mStage[ConstMgr.STAGE].planetList[0].getRadius(), mStage[ConstMgr.STAGE].planetList[0].getRadius(), mStage[ConstMgr.STAGE].planetList[0].getRadius());
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
         Matrix.setIdentityM(tempMatrix, 0);
         Matrix.rotateM(tempMatrix, 0, mStage[ConstMgr.STAGE].currentFrame * mStage[ConstMgr.STAGE].planetList[0].getRotationSpeed(), 0.0f, 1.0f, 0.0f);
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
         Matrix.setIdentityM(tempMatrix, 0);
         Matrix.translateM(tempMatrix, 0, mStage[ConstMgr.STAGE].planetList[0].getOrbitRadius(), 0.0f, 0.0f);
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
         Matrix.setIdentityM(tempMatrix, 0);
         Matrix.rotateM(tempMatrix, 0, mStage[ConstMgr.STAGE].currentFrame * mStage[ConstMgr.STAGE].planetList[0].getRevolutionSpeed(), 0.0f, 1.0f, 0.0f);
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
         temp.setXYZ(0, 0, 0);
-        temp.multM(mModelMatrix, 1.0f);
+        temp.multM(modelMatrix, 1.0f);
         mStage[ConstMgr.STAGE].planetList[0].setCurrentPos(temp);
         //최종 P * V * M 매트릭스
-        Matrix.multiplyMM(mModelViewMatrix, 0, mCamera.viewMatrix, 0, mModelMatrix, 0);
-        Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
+        Matrix.multiplyMM(mModelViewMatrix, 0, mCamera.viewMatrix, 0, modelMatrix, 0);
+        Matrix.multiplyMM(modelMatrix, 0, pv, 0, modelMatrix, 0);
         GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(mProgramImage, "modelViewMatrix"), 1, false, mModelViewMatrix, 0);
-        mStage[ConstMgr.STAGE].planetList[0].draw(mMVPMatrix);
+        mStage[ConstMgr.STAGE].planetList[0].draw(modelMatrix);
 
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
         // Blur
@@ -678,17 +705,17 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         // sky sphere
         GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_NORMAL);
         Matrix.setIdentityM(tempMatrix, 0);
-        Matrix.setIdentityM(mModelMatrix, 0);
+        Matrix.setIdentityM(modelMatrix, 0);
         float scaleVal = mCamera.lenghToEye() / 250.0f;
         scaleVal *= 6.0f;
         Matrix.scaleM(tempMatrix, 0, scaleVal, scaleVal, scaleVal);
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
         Matrix.setIdentityM(tempMatrix, 0);
         Matrix.translateM(tempMatrix, 0, mCamera.at[0], mCamera.at[1], mCamera.at[2]);
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
 
-        Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
-        mSpaceMap.draw(mMVPMatrix);
+        Matrix.multiplyMM(modelMatrix, 0, pv, 0, modelMatrix, 0);
+        mSpaceMap.draw(modelMatrix);
         GLES20.glDisable(GLES20.GL_CULL_FACE);
 
 
@@ -699,56 +726,56 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             if(i==0) GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_NORMAL);
             else GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_PHONG);
             Matrix.setIdentityM(tempMatrix, 0);
-            Matrix.setIdentityM(mModelMatrix, 0);
+            Matrix.setIdentityM(modelMatrix, 0);
             Matrix.scaleM(tempMatrix, 0, mStage[ConstMgr.STAGE].planetList[i].getRadius(), mStage[ConstMgr.STAGE].planetList[i].getRadius(), mStage[ConstMgr.STAGE].planetList[i].getRadius());
-            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+            Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
             Matrix.setIdentityM(tempMatrix, 0);
             Matrix.rotateM(tempMatrix, 0, mStage[ConstMgr.STAGE].currentFrame * mStage[ConstMgr.STAGE].planetList[i].getRotationSpeed(), 0.0f, 1.0f, 0.0f);
-            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+            Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
             Matrix.setIdentityM(tempMatrix, 0);
             Matrix.translateM(tempMatrix, 0, mStage[ConstMgr.STAGE].planetList[i].getOrbitRadius(), 0.0f, 0.0f);
-            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+            Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
             Matrix.setIdentityM(tempMatrix, 0);
             Matrix.rotateM(tempMatrix, 0, mStage[ConstMgr.STAGE].currentFrame * mStage[ConstMgr.STAGE].planetList[i].getRevolutionSpeed(), 0.0f, 1.0f, 0.0f);
-            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+            Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
             //현재 행성 위치 업데이트
             temp.setXYZ(0, 0, 0);
-            temp.multM(mModelMatrix, 1.0f);
+            temp.multM(modelMatrix, 1.0f);
             mStage[ConstMgr.STAGE].planetList[i].setCurrentPos(temp);
             //최종 P * V * M 매트릭스
-            Matrix.multiplyMM(mModelViewMatrix, 0, mCamera.viewMatrix, 0, mModelMatrix, 0);
-            Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
+            Matrix.multiplyMM(mModelViewMatrix, 0, mCamera.viewMatrix, 0, modelMatrix, 0);
+            Matrix.multiplyMM(modelMatrix, 0, pv, 0, modelMatrix, 0);
             GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(mProgramImage, "modelViewMatrix"), 1, false, mModelViewMatrix, 0);
             //GLES20.glEnable(GLES20.GL_TEXTURE_2D);
-            mStage[ConstMgr.STAGE].planetList[i].draw(mMVPMatrix);
+            mStage[ConstMgr.STAGE].planetList[i].draw(modelMatrix);
             //GLES20.glDisable(GLES20.GL_TEXTURE_2D);
             // 행성 궤도!
             GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_AIM);
             Matrix.setIdentityM(tempMatrix, 0);
-            Matrix.setIdentityM(mModelMatrix, 0);
+            Matrix.setIdentityM(modelMatrix, 0);
             float radius = mStage[ConstMgr.STAGE].planetList[i].getOrbitRadius();
             Matrix.scaleM(tempMatrix, 0, radius, radius, radius);
-            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+            Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
             Matrix.setIdentityM(tempMatrix, 0);
             Matrix.rotateM(tempMatrix, 0, 90 + mStage[ConstMgr.STAGE].currentFrame * mStage[ConstMgr.STAGE].planetList[i].getRevolutionSpeed(), 0.0f, 1.0f, 0.0f);
-            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
-            Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
-            mOrb.draw(mMVPMatrix);
+            Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
+            Matrix.multiplyMM(modelMatrix, 0, pv, 0, modelMatrix, 0);
+            mOrb.draw(modelMatrix);
             // 궤도 방향 표시 화살표
             GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_AIM);
             Matrix.setIdentityM(tempMatrix, 0);
-            Matrix.setIdentityM(mModelMatrix, 0);
+            Matrix.setIdentityM(modelMatrix, 0);
             Matrix.scaleM(tempMatrix, 0, radius, radius, radius);
-            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+            Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
             Matrix.setIdentityM(tempMatrix, 0);
 //            radius -= 1.0f;
 //            Matrix.translateM(tempMatrix, 0, radius, 0, 0);
-//            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+//            Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
 //            Matrix.setIdentityM(tempMatrix, 0);
             Matrix.rotateM(tempMatrix, 0, 88.5f + mStage[ConstMgr.STAGE].currentFrame * mStage[ConstMgr.STAGE].planetList[i].getRevolutionSpeed(), 0.0f, 1.0f, 0.0f);
-            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
-            Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
-            mAOrb.draw(mMVPMatrix);
+            Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
+            Matrix.multiplyMM(modelMatrix, 0, pv, 0, modelMatrix, 0);
+            mAOrb.draw(modelMatrix);
             //mAOrb.setupVertexBuffer(mStage[ConstMgr.STAGE].planetList, i);
             //mAOrb.draw(pv);
         }
@@ -850,57 +877,23 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_NORMAL);
 
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         float[] tempMatrix = new float[16];
-        // sky sphere
-        GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_NORMAL);
-        Matrix.setIdentityM(tempMatrix, 0);
-        Matrix.setIdentityM(mModelMatrix, 0);
-        float scaleVal = mCamera.lenghToEye() / 250.0f;
-        scaleVal *= 6.0f;
-        Matrix.scaleM(tempMatrix, 0, scaleVal, scaleVal, scaleVal);
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
-        Matrix.setIdentityM(tempMatrix, 0);
-        Matrix.translateM(tempMatrix, 0, mCamera.at[0], mCamera.at[1], mCamera.at[2]);
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        float[] modelMatrix = new float[16];
 
-        Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
-
-        GLES20.glEnable(GLES20.GL_CULL_FACE);
-        GLES20.glCullFace(GLES20.GL_FRONT);
-        //GLES20.glEnable(GLES20.GL_TEXTURE_2D);
-        mSpaceMap.draw(mMVPMatrix);
-        GLES20.glDisable(GLES20.GL_CULL_FACE);
-        //GLES20.glDisable(GLES20.GL_TEXTURE_2D);
         // user행성
         Matrix.setIdentityM(tempMatrix, 0);
-        Matrix.setIdentityM(mModelMatrix, 0);
+        Matrix.setIdentityM(modelMatrix, 0);
         Matrix.rotateM(tempMatrix, 0, 90, 1.0f, 0.0f, 0.0f);
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
         Matrix.setIdentityM(tempMatrix, 0);
         Matrix.rotateM(tempMatrix, 0, 45 - mUser.getRotateY(), 0.0f, 0.0f, 1.0f);
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
-        Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
-        mUser.draw(mMVPMatrix);
+        Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
+        Matrix.multiplyMM(modelMatrix, 0, pv, 0, modelMatrix, 0);
+        mUser.draw(modelMatrix);
 
-//        Matrix.setIdentityM(tempMatrix, 0);
-//        Matrix.setIdentityM(mModelMatrix, 0);
-//        Matrix.scaleM(tempMatrix, 0, 0.05f, 0.05f, 0.05f);
-//        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
-//        Matrix.setIdentityM(tempMatrix, 0);
-//        Matrix.translateM(tempMatrix, 0, mSelectPos.x * 1.2f, mSelectPos.y * 1.2f, mSelectPos.z * 1.2f);
-//        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
-//        Matrix.setIdentityM(tempMatrix, 0);
-//        Matrix.rotateM(tempMatrix, 0, 90, 1.0f, 0.0f, 0.0f);
-//        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
-//        Matrix.setIdentityM(tempMatrix, 0);
-//        Matrix.rotateM(tempMatrix, 0, 45 - mUser.getRotateY(), 0.0f, 0.0f, 1.0f);
-//        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
-//        Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
-//        mUser.draw(mMVPMatrix);
-
+        GLES20.glDisable(GLES20.GL_DEPTH_TEST);
         GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), 5.0f);
         GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "color_R"), 0.0f);
         GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "color_G"), 1.0f);
@@ -909,32 +902,36 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
 
         Vector3f norm = new Vector3f(0f, 0f, 1f);
         Vector3f axis = new Vector3f();
-        axis.copy(norm.Cross(mSelectPos));
+        Vector3f target = new Vector3f();
+        target.copy(mSelectPos);
+        axis.copy(norm.Cross(target));
         axis.normalize();
-        float angle = (float)Math.acos(norm.dot(mSelectPos));
+        float angle = (float)Math.acos(norm.dot(target));
 
         Matrix.setIdentityM(tempMatrix, 0);
-        Matrix.setIdentityM(mModelMatrix, 0);
+        Matrix.setIdentityM(modelMatrix, 0);
         Vector3f.setRotate(tempMatrix, axis, angle);
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
         Matrix.setIdentityM(tempMatrix, 0);
-        Matrix.translateM(tempMatrix, 0, mSelectPos.x * 1.05f, mSelectPos.y * 1.05f, mSelectPos.z * 1.05f);
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.translateM(tempMatrix, 0, target.x, target.y, target.z);
+        Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
         Matrix.setIdentityM(tempMatrix, 0);
         Matrix.rotateM(tempMatrix, 0, 90, 1.0f, 0.0f, 0.0f);
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+        Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
         Matrix.setIdentityM(tempMatrix, 0);
         Matrix.rotateM(tempMatrix, 0, 45 - mUser.getRotateY(), 0.0f, 0.0f, 1.0f);
-        Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
-        Matrix.multiplyMM(mMVPMatrix, 0, pv, 0, mModelMatrix, 0);
-        mBeacon.draw(mMVPMatrix);
-
+        Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
+        Matrix.multiplyMM(modelMatrix, 0, pv, 0, modelMatrix, 0);
+        GLES20.glEnable(GLES20.GL_CULL_FACE);
+        GLES20.glCullFace(GLES20.GL_BACK);
+        mBeacon.draw(modelMatrix);
+        GLES20.glDisable(GLES20.GL_CULL_FACE);
 
         GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), ConstMgr.RENDER_NORMAL);
-        GLES20.glDisable(GLES20.GL_DEPTH_TEST);
         mMainScreen.draw(orth);
         mGoldIcon.draw(orth);
         mGoldAmount.draw(orth);
+        mInven.draw(orth);
     }
 
     private void RenderTest(float[] pv, float[] orth) {
@@ -1005,6 +1002,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     float distance = 1.f;
     boolean aiming = false;
     boolean rotating = false;
+    boolean touchingEarth = false;
     float startingAngle = 0.0f;
 
     private int mPointerId;
@@ -1075,13 +1073,23 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                 case MotionEvent.ACTION_DOWN: {
                     for (int i = 0; i < ConstMgr.STAGEBUTTON_NUM; i++) {
                         if(mStageButtons[i].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
-                            ConstMgr.STAGE = 0;
+                            ConstMgr.STAGE = i;
                             mStage[ConstMgr.STAGE].updatePosInList(0);
-                            mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].copyUserData(mUser);
-                            for( int j = 0 ; j < mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getCannonListSize() ; j++) {
-                                mMissileButton[j].setIsActive(true);
-                            }
+                            mStage[ConstMgr.STAGE].currentFrame = 0;
                             mStage[ConstMgr.STAGE].turn = 0;
+                            mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].copyUserData(mUser);
+                            ConstMgr.RENDER_MODE = ConstMgr.RENDER_SETTING;
+                            ConstMgr.TURN_MODE = ConstMgr.TURN_CAMERA;
+                            for(int j = 0 ; j < ConstMgr.MODEBUTTON_NUM; j++) {
+                                mModeButton[j].setIsActive(true);
+                            }
+                            for( int j = 0 ; j < mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getCannonListSize() ; j++) {
+                                mMissileButton[j].setIsActive(false);
+                            }
+                            for(int j = 0 ; j < mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getCannonListSize() ; j++) {
+                                mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].cannons[j].aim.setIsAimed(false);
+                            }
+                            mShootButton.setIsActive(true);
                             ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_GAME;
                             startTime = mLastTime;
                         }
@@ -1117,8 +1125,14 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                         mShootButton.setIsActive(false);
                     } else if(mModeButton[0].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
                         ConstMgr.TURN_MODE = ConstMgr.TURN_AIM;
+                        for( int j = 0 ; j < mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getCannonListSize() ; j++) {
+                            mMissileButton[j].setIsActive(true);
+                        }
                     } else if(mModeButton[1].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
                         ConstMgr.TURN_MODE = ConstMgr.TURN_CAMERA;
+                        for( int j = 0 ; j < mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getCannonListSize() ; j++) {
+                            mMissileButton[j].setIsActive(false);
+                        }
                     } else if ((ConstMgr.RENDER_MODE == ConstMgr.RENDER_SETTING) && (ConstMgr.TURN_MODE == ConstMgr.TURN_AIM)) {
                         for(int i = 0 ; i < 5 ; i ++){
                             if(mMissileButton[i].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
@@ -1246,27 +1260,48 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                     y2 = mScreenConfig.deviceToVirtualY((int) event.getY(1));  //////////////////////
                     distance = (float)Math.sqrt((double)((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2)));
             }
-        } else if(ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_EQUIP) {
+        }
+        //장비화면 이벤트
+        else if(ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_EQUIP) {
             switch(action) {
                 case MotionEvent.ACTION_DOWN :
-                    if(touchEarth(x, y, mSelectPos)) {
-                        rotating = false;
-                    } else {
-                        rotating = true;
-                        px = mScreenConfig.deviceToVirtualX(x);
-                        startingAngle = mUser.getRotateY();
+                    switch(mInven.isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
+                        case Inventory.ITEM :
+                            break;
+                        case Inventory.BUTTON :
+                            break;
+                        case 0 :
+                            if(touchEarth(x, y, mSelectPos)) {
+                                rotating = false;
+                                touchingEarth = true;
+                            } else {
+                                rotating = true;
+                                touchingEarth = false;
+                                px = mScreenConfig.deviceToVirtualX(x);
+                                startingAngle = mUser.getRotateY();
+                            }
                     }
                     break;
                 case MotionEvent.ACTION_MOVE :
                     if (rotating) {
                         x1 = mScreenConfig.deviceToVirtualX(x);
                         mUser.setRotateY(startingAngle + (px - x1) / (float) mScreenConfig.getmVirtualWidth() * 360.0f);
-                    } else {
+                    } else if (touchingEarth){
                         touchEarth(x, y, mSelectPos);
+                    } else if (mInven.getIsScroll()) {
+                        mInven.setScroll(mScreenConfig.deviceToVirtualY(y));
+                    } else {
+                        mInven.checkAndStartScroll(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y));
                     }
                     break;
                 case MotionEvent.ACTION_UP :
                     rotating = false;
+                    touchingEarth = false;
+                    if(mInven.getIsScroll()) {
+                        mInven.endScroll();
+                    } else if(mInven.isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y)) == Inventory.ITEM) {
+                        mInven.checkItem(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y));
+                    }
                     break;
             }
         } else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_TEST) {
@@ -1320,31 +1355,37 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         temp1.copy(temp1.plus(ray_wor.multScalar(mCamera.eye[1])));
 
         if(temp1.length() < 1.0f) {
-            result.setXYZ(mCamera.eye[0], mCamera.eye[1], mCamera.eye[2]);
+            Vector3f returnVal = new Vector3f(mCamera.eye[0], mCamera.eye[1], mCamera.eye[2]);
             ray_wor.normalize();
-            float EdotV = ray_wor.dot(result);
-            float EdotE = result.dot(result);
-            float length  = -EdotV - (float)Math.sqrt((double)(1 - EdotE + EdotV*EdotV));
-            result.copy(result.plus(ray_wor.multScalar(length)));
-
+            float EdotV = ray_wor.dot(returnVal);
+            float EdotE = returnVal.dot(returnVal);
+            float length  = -EdotV - (float)Math.sqrt(1 - EdotE + EdotV*EdotV);
+            returnVal.copy(returnVal.plus(ray_wor.multScalar(length)));
+//
             float[] tempMatrix = new float[16];
+            float[] modelMatrix = new float[16];
             Matrix.setIdentityM(tempMatrix, 0);
-            Matrix.setIdentityM(mModelMatrix, 0);
+            Matrix.setIdentityM(modelMatrix, 0);
             Matrix.rotateM(tempMatrix, 0, 90, 1.0f, 0.0f, 0.0f);
-            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
+            Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
             Matrix.setIdentityM(tempMatrix, 0);
             Matrix.rotateM(tempMatrix, 0, 45 - mUser.getRotateY(), 0.0f, 0.0f, 1.0f);
-            Matrix.multiplyMM(mModelMatrix, 0, tempMatrix, 0, mModelMatrix, 0);
-            Matrix.invertM(mModelMatrix, 0, mModelMatrix, 0);
-            result.normalize();
-            result.multM(mModelMatrix, 1.0f);
-            result.normalize();
-            //result.x = -result.x;
+            Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
+            Matrix.invertM(modelMatrix, 0, modelMatrix, 0);
+            returnVal.normalize();
+            returnVal.multM(modelMatrix, 1.0f);
+            returnVal.normalize();
 
-//            Log.e("touched", "" + result.x + "," + result.y + "," + result.z + "length : " + result.length());
+            if(returnVal.length() != 1.0f) {
+                return true;
+            } else {
+                result.copy(returnVal);
+            }
             return true;
+        } else {
+            result.normalize();
+            return false;
         }
-        return false;
     }
 
     private int touchObjectCheck(int x, int y){
@@ -1527,6 +1568,9 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             case 1 : break;
             // 나가기
             case 2 : {
+                mParticleSystem.clearBuffer();
+                mParticleSystem.deactivate();
+                ConstMgr.RENDER_MODE = ConstMgr.RENDER_SETTING;
                 mPopup.setMode(ConstMgr.POPUP_MODE_EXIT_GAME);
                 mPause.setIsActive(false);
                 mPopup.setIsActive(true);

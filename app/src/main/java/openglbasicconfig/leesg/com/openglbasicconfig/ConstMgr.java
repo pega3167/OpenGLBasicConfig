@@ -20,8 +20,9 @@ public class ConstMgr {
     public final static int MAINBUTTON_NUM= 3;
     public final static int INTROBUTTON_NUM = 2;
     public final static int STAGEBUTTON_NUM = 1;
+    public final static int MODEBUTTON_NUM = 2;
     //현재 화면의 모드
-    public static int SCREEN_MODE = SCREEN_INTRO;
+    public static int SCREEN_MODE = 0;
     // Frame Per Second
     public final static int FPS = 64;
     // 한 턴의 프레임 수
