@@ -11,15 +11,12 @@ import android.media.SoundPool;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Window;
 import android.view.WindowManager;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
@@ -29,6 +26,7 @@ public class MainActivity extends Activity {
     private SoundPool mSoundPool;
     private int mSoundExplosion;
     private int mSoundButton;
+    private int mSoundClink;
     AudioManager audioManager;
     //액티비티 생성
     @Override
@@ -53,8 +51,10 @@ public class MainActivity extends Activity {
         }
         try {
             AssetManager assetManager = getAssets();
-            AssetFileDescriptor descriptorBtn = assetManager.openFd("button01.ogg");
+            AssetFileDescriptor descriptorBtn = assetManager.openFd("sounds/button01.ogg");
             mSoundButton = mSoundPool.load(descriptorBtn, 1);
+            descriptorBtn = assetManager.openFd("sounds/Clinking_Teaspoon-Simon_Craggs-59102891.ogg");
+            mSoundClink = mSoundPool.load(descriptorBtn, 1);
         }
         catch(Exception exAsset){}
     }
@@ -86,6 +86,13 @@ public class MainActivity extends Activity {
     public void soundButton() {
         try {
             mSoundPool.play(mSoundButton, 1.0f, 1.0f, 0, 0, 1.0f);
+        }
+        catch(Exception e) {}
+    }
+    // 설치 효과음
+    public void equipSound() {
+        try {
+            mSoundPool.play(mSoundClink, 1.0f, 1.0f, 0, 0, 1.0f);
         }
         catch(Exception e) {}
     }
@@ -126,4 +133,5 @@ public class MainActivity extends Activity {
 
         return super.onOptionsItemSelected(item);
     }
+
 }

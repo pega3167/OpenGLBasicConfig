@@ -108,6 +108,49 @@ public class Planet extends Sphere {
     }
     public Vector3f getCurrentPos() { return this.currentPos; }
 
+    public void clearCannonList() {
+        for(int i = 0 ; i < 5 ; i++) {
+            this.cannons[i].currentPos =  new Vector3f(0.0f, 0.0f, 0.0f);
+            this.cannons[i].relativePos =  new Vector3f(0.0f, 0.0f, 0.0f);
+            this.cannons[i].attackPoint = 0;
+            this.cannons[i].speed = 0.0f;
+            this.cannons[i].type = 0;
+        }
+        cannonListSize = 0;
+    }
+
+    public void changeCannon(int index, Vector3f pos, int attackPoint, float speed, int type, int emitterIndex) {
+        this.cannons[index].relativePos.x = pos.x;
+        this.cannons[index].relativePos.y = pos.y;
+        this.cannons[index].relativePos.z = pos.z;
+        this.cannons[index].relativePos.normalize();
+        this.cannons[index].attackPoint = attackPoint;
+        this.cannons[index].speed = speed;
+        this.cannons[index].type = type;
+        this.cannons[index].emitterIndex = emitterIndex;
+        float modelMatrix[] = new float[16];
+        float tempMatrix[] = new float[16];
+        Matrix.setIdentityM(modelMatrix, 0);
+        Matrix.setIdentityM(tempMatrix, 0);
+        Matrix.translateM(tempMatrix, 0, this.cannons[index].relativePos.x, this.cannons[index].relativePos.y, this.cannons[index].relativePos.z);
+        Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
+        Matrix.setIdentityM(tempMatrix, 0);
+        Matrix.scaleM(tempMatrix, 0, this.radius, this.radius, this.radius);
+        Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
+        Matrix.setIdentityM(tempMatrix, 0);
+        Matrix.translateM(tempMatrix, 0, this.orbitRadius, 0, 0);
+        Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
+
+        cannons[index].currentPos.multM(modelMatrix, 0);
+        cannons[index].aim.setShootPos(cannons[index].currentPos);
+        Vector3f temp = this.cannons[index].currentPos.minus(this.currentPos);
+        temp.normalize();
+        cannons[index].aim.setShootVelocity(temp.multScalar(speed));
+        cannons[index].missile.setCurrentPos(cannons[index].currentPos);
+        cannons[index].missile.setVelocity(temp.multScalar(speed));
+        cannons[index].missile.updateAngle();
+    }
+
     public void addCannon(Vector3f pos, int attackPoint, float speed, int type, int emitterIndex) {
         if(cannonListSize >= 5) {
             // 캐논수 꽉참

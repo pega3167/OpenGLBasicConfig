@@ -74,9 +74,18 @@ public class ParticleSystem {
         }
     }
 
+    public void clearEmitterList() {
+        emitterList.removeAllElements();
+    }
     public void addEmitter(Vector3f pos, Vector3f velocity) {
         Emitter emitter = new Emitter(pos, velocity);
         emitterList.add(emitter);
+    }
+    public int addEmitter() {
+        Vector3f temp = new Vector3f();
+        Emitter emitter = new Emitter(temp, temp);
+        emitterList.add(emitter);
+        return emitterList.size()-1;
     }
     public void addParticle(int frame, Vector3f color) {
         Random random = new Random();

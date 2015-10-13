@@ -20,6 +20,10 @@ public class Button extends Square{
         }
         return returnValue;
     }
+    public boolean isSelectedNoSound(int x, int y) {
+        return super.isSelected(x,y);
+    }
+
     public void draw(float[] m) {
         //Matrix.setIdentityM(m, 0);
         if(!mIsActive) {return;}
