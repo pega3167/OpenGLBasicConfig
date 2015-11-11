@@ -46,7 +46,7 @@ public class orbital_arrow {
         mTexCoords.order(ByteOrder.nativeOrder());
         texBuffer = mTexCoords.asFloatBuffer();
         */
-        ByteBuffer mIndices = ByteBuffer.allocateDirect(vertexCount * 2);
+        ByteBuffer mIndices = ByteBuffer.allocateDirect(vertexCount * 2 * 2/*for opposite side*/);
         mIndices.order(ByteOrder.nativeOrder());
         indexBuffer = mIndices.asShortBuffer();
         for (int i = 0 ; i < vertexCount ; i++) {
@@ -56,6 +56,11 @@ public class orbital_arrow {
             normBuffer.put(0.0f);
             //texBuffer.put(0.0f);
             //texBuffer.put(0.0f);
+        }
+        int j = vertexCount;
+        for (int i = vertexCount ; i < vertexCount*2 ; i++) {
+            j--;
+            indexBuffer.put((short)j);
         }
         normBuffer.position(0);
         //texBuffer.position(0);
@@ -189,7 +194,7 @@ public class orbital_arrow {
         //GLES20.glDisable(GLES20.GL_BLEND);
         //이미지 핸들을 바인드 한다. 수정중
         //GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mHandleBitmap);
-        GLES20.glDrawElements(GLES20.GL_TRIANGLES, vertexCount, GLES20.GL_UNSIGNED_SHORT, indexBuffer);
+        GLES20.glDrawElements(GLES20.GL_TRIANGLES, vertexCount * 2, GLES20.GL_UNSIGNED_SHORT, indexBuffer);
         GLES20.glDisableVertexAttribArray(mPositionHandle);
         GLES20.glDisableVertexAttribArray(mNormalLoc);
         //GLES20.glDisableVertexAttribArray(mTexCoordLoc);

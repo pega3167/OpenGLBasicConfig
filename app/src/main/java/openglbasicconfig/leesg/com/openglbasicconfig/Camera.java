@@ -107,8 +107,9 @@ public class Camera {
         Vector3f a2 = new Vector3f(up[0],up[1],up[2]);
         Vector3f a3 = a1.Cross(a2);
         a3.y = 0;
-        a3.x = a3.x/a3.length();
-        a3.z = a3.z/a3.length();
+        float a = a3.length();
+        a3.x = a3.x/a;
+        a3.z = a3.z/a;
         at[0] += y * a3.x;
         at[2] += y * a3.z;
         eye[0] += y * a3.x;
@@ -116,12 +117,13 @@ public class Camera {
 
         a2 = new Vector3f(up[0]-a1.x,up[1]-a1.y,up[2]-a1.z);
         a2.y = 0;
-        a2.x = a2.x/a2.length();
-        a2.z = a2.z/a2.length();
-        at[0] += x * a2.x;
-        at[2] += x * a2.z;
-        eye[0] += x * a2.x;
-        eye[2] += x * a2.z;
+        a = a2.length();
+        a2.x = a2.x/a;
+        a2.z = a2.z/a;
+        at[0] -= x * a2.x;
+        at[2] -= x * a2.z;
+        eye[0] -= x * a2.x;
+        eye[2] -= x * a2.z;
         /*
         float[] tempMatrix = new float[16];
         Matrix.setIdentityM(tempMatrix,0);
@@ -223,7 +225,7 @@ public class Camera {
         }
     }
     public void setDefault() {
-        setEye(0, 250f,0);
+        setEye(0, 250.0f,0);
         setAt(0f, 0f, 0f);
         setUp(0f, 0f, 1f);
         setProjectionMatrix();

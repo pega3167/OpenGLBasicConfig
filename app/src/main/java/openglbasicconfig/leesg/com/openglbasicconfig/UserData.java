@@ -126,7 +126,7 @@ public class UserData {
             if(equipList[i].DBindex != -1) {
                 int index = equipList[i].DBindex;
                 int j = particleSystem.addEmitter();
-                userPlanet.addCannon(equipList[i].pos, itemDB.getItem(index).getAttackPoint(), 0.015f, itemDB.getItem(index).getType(), j);
+                userPlanet.addCannon(equipList[i].pos, itemDB.getItem(index).getAttackPoint(), 0.05f, itemDB.getItem(index).getType(), j);
             } else
                 break;
         }

@@ -130,9 +130,7 @@ public class Aim {
         this.shootVelocity.y = y;
         this.shootVelocity.z = z;
     }
-    public void setShootPos(Vector3f shootPos) {
-        this.shootPos = shootPos;
-    }
+    public void setShootPos(Vector3f shootPos) { this.shootPos = shootPos; }
     public void setShootPos(float x, float y, float z) {
         this.shootPos.x = x;
         this.shootPos.y = y;

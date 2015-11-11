@@ -44,6 +44,9 @@ public class Planet extends Sphere {
         }
     }
 
+    public void recoverHP() {
+        hitPoint = maxHitPoint;
+    }
     public void copyUserData(Planet planet) {
         this.hitPoint = planet.hitPoint;
         this.maxHitPoint = planet.maxHitPoint;
@@ -108,6 +111,13 @@ public class Planet extends Sphere {
     }
     public Vector3f getCurrentPos() { return this.currentPos; }
 
+    // 데미지가 들어올경우 체력을 깍는 함수.
+    public void setDamage (int damage) {
+        hitPoint -= damage;
+        if(hitPoint < 0) { hitPoint = 0; }
+    }
+
+
     public void clearCannonList() {
         for(int i = 0 ; i < 5 ; i++) {
             this.cannons[i].currentPos =  new Vector3f(0.0f, 0.0f, 0.0f);
@@ -151,6 +161,10 @@ public class Planet extends Sphere {
         cannons[index].missile.updateAngle();
     }
 
+    public void setAim(Planet[] planetList, int listSize, int userNum) {
+
+    }
+
     public void addCannon(Vector3f pos, int attackPoint, float speed, int type, int emitterIndex) {
         if(cannonListSize >= 5) {
             // 캐논수 꽉참
@@ -188,6 +202,7 @@ public class Planet extends Sphere {
             this.cannonListSize += 1;
         }
     }
+
     public void updateCannon(int frame) {
         float modelMatrix[] = new float[16];
         float tempMatrix[] = new float[16];
@@ -265,29 +280,16 @@ public class Planet extends Sphere {
             currentPos.y = y;
             currentPos.z = z;
         }
-        public void setAttackPoint(int power){
-            attackPoint = power;
-        }
-        public void setSpeed(float sp){
-            speed = sp;
-        }
-        public void setType(int t){
-            type = t;
-        }
-        public Vector3f getCurrentPos(){
-            return currentPos;
-        }
-        public Vector3f getRelativePos() {
-            return relativePos;
-        }
-        public int getAttackPoint(){
-            return attackPoint;
-        }
-        public int getType(){
-            return type;
-        }
-        public float getSpeed(){
-            return speed;
-        }
+        public void setAttackPoint(int power){ attackPoint = power; }
+        public void setSpeed(float sp){ speed = sp; }
+        public void setType(int t){ type = t; }
+        public void setEmitterIndex(int index) {emitterIndex = index; }
+
+        //gets
+        public Vector3f getCurrentPos(){ return currentPos; }
+        public Vector3f getRelativePos() { return relativePos; }
+        public int getAttackPoint(){ return attackPoint; }
+        public int getType(){ return type; }
+        public float getSpeed(){ return speed; }
     }
 }

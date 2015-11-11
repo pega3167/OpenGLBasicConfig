@@ -42,21 +42,7 @@ public class ParticleSystem {
     public void setBitmap(int handle) {
         mHandleBitmap = handle;
     }
-    /*
-    public class Particle {
-        public Vector3f pos;
-        public Vector3f velocity;
-        public Vector3f color;
-        public int deathFrame;
-        //생성자
-        public Particle() {
-            this.pos = new Vector3f();
-            this.velocity = new Vector3f();
-            this.color = new Vector3f();
-            this.deathFrame = 0;
-        }
-    }
-    */
+
     public class Emitter {
         public Vector3f pos;
         public Vector3f velocity;
@@ -74,9 +60,7 @@ public class ParticleSystem {
         }
     }
 
-    public void clearEmitterList() {
-        emitterList.removeAllElements();
-    }
+    public void clearEmitterList() { emitterList.removeAllElements(); }
     public void addEmitter(Vector3f pos, Vector3f velocity) {
         Emitter emitter = new Emitter(pos, velocity);
         emitterList.add(emitter);
