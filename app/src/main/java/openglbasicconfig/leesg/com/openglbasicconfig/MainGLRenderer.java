@@ -79,6 +79,17 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     //item DB
     ItemList mItemList;
     Square[] itemIcon;
+    //shop
+    Shop mShop;
+    Square shopBG;
+    Square shopWF;
+    Square shopBlock;
+    Button shopBuyButton;
+    Square[] itemName;
+    Square[] itemAP;
+    Square[] itemWP;
+    Square[] itemInfo;
+    Square[] itemPrice;
 
     // 화면 버튼
     Button mIntroButtons[];
@@ -112,7 +123,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     ParticleSystem mParticleSystem;
     int particleTextureHandle[] = new int[1];
     // planet texture
-    int planetTexureHandle[] = new int[2];
+    int planetTextureHandle[] = new int[4];
     // Stage
     Stage mStage[] = new Stage[1];
     // frame
@@ -214,6 +225,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         initStageScreen();
         initGameScreen();
         initEquipScreen();
+        initShopScreen();
         initPopup();
         initFBO();
     }
@@ -224,8 +236,10 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     }
 
     private void initPlanetResource() {
-        planetTexureHandle[0] = mBitmapLoader.getImageHandle("drawable/earthmap", true);
-        planetTexureHandle[1] = mBitmapLoader.getImageHandle("drawable/th_sun", true);
+        planetTextureHandle[0] = mBitmapLoader.getImageHandle("drawable/earthmap", true);
+        planetTextureHandle[1] = mBitmapLoader.getImageHandle("drawable/th_sun", true);
+        planetTextureHandle[2] = mBitmapLoader.getImageHandle("drawable/planetaruba", true);
+        planetTextureHandle[3] = mBitmapLoader.getImageHandle("drawable/planetklendathu", true);
     }
 
     private void initObject() {
@@ -297,12 +311,11 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mStage[0] = new Stage(mProgramImage, 4, 3);
         mStage[0].planetList[0] = new Planet(mProgramImage, 0.0f, 0.5f, 0.0f, 0.0f, 1, 1, 0.0005f, 1.0f, temp);
         mStage[0].planetList[1] = new Planet(mProgramImage, 2.0f, 0.1f, 0.2f, 0.1f, 50, 50, 0.0001f, 1.0f, temp);
-        //mStage[0].planetList[1].addCannon(pos, 20, 0.05f, 1, 0);
+        mStage[0].planetList[1].addCannon(pos, 20, 0.05f, 1, 0);
         mStage[0].planetList[2] = new Planet(mProgramImage, 4.0f, 0.1f, 0.1f, 1.3f, 50, 50, 0.0001f, 1.0f, temp);
         mStage[0].planetList[2].addCannon(pos, 20, 0.05f, 1, 0);
-        pos.setXYZ(-1.0f,0.0f,0.0f);
-        mStage[0].planetList[2].addCannon(pos, 20, 0.05f, 1, 0);
-        mStage[0].planetList[3] = new Planet(mProgramImage, 6.0f, 0.5f, 0.03f, 0.6f, 50, 50, 0.0001f, 1.0f, temp);
+        pos.setXYZ(-1.0f, 0.0f, 0.0f);
+        mStage[0].planetList[3] = new Planet(mProgramImage, 6.0f, 0.1f, 0.03f, 0.6f, 50, 50, 0.0001f, 1.0f, temp);
 
         mSpaceMap = new Sphere(mProgramImage);
         setResourceStage();
@@ -370,6 +383,32 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mInven.setIsActive(true);
 
         setResourceEquipScreen();
+    }
+
+    private void initShopScreen() {
+        shopBG = new Square(mProgramImage);
+        shopWF = new Square(mProgramImage);
+        shopBlock = new Square(mProgramImage);
+        shopBuyButton = new Button(mProgramImage, mProgramSolidColor, this);
+        int size = mItemList.item_count;
+        itemName = new Square[size];
+        itemAP = new Square[size];
+        itemWP = new Square[size];
+        itemInfo = new Square[size];
+        itemPrice = new Square[size];
+        for(int i = 0 ; i < mItemList.item_count; i++) {
+            itemName[i] = new Square(mProgramImage);
+            itemAP[i] = new Square(mProgramImage);
+            itemWP[i] = new Square(mProgramImage);
+            itemInfo[i] = new Square(mProgramImage);
+            itemPrice[i] = new Square(mProgramImage);
+
+        }
+        mShop = new Shop(shopBG, shopWF, shopBlock, shopBuyButton, mUserData,this, mItemList, itemName, itemAP, itemWP, itemInfo, itemPrice);
+        mShop.setPos(mScreenConfig.getmVirtualWidth() / 2.0f, mScreenConfig.getmVirtualHeight() / 2.0f);
+        mShop.setIsActive(true);
+
+        setResourceShopScreen();
     }
 
     private void initStageScreen() {
@@ -446,6 +485,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         setResourceStageScreen();
         setResourceGameScreen();
         setResourceEquipScreen();
+        setResourceShopScreen();
         setResourcePopup();
     }
 
@@ -464,17 +504,17 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     }
 
     private void setResourceUser() {
-        mUser.setBitmap(planetTexureHandle[0], 1024, 512, 36);
+        mUser.setBitmap(planetTextureHandle[0], 1024, 512, 36);
         String tempStr = NumberFormat.getNumberInstance(Locale.US).format(mUserData.getGold());
         mGoldAmount.setBitmap(mBitmapLoader.getHangulHandle(tempStr, mScreenConfig.getmVirtualHeight() / 15, Color.WHITE, -1, 1.0f, mHangulBitmap.TRANSFORMERS, 1), mBitmapLoader.getWordLength(), mScreenConfig.getmVirtualHeight() / 15);
         mGoldAmount.setPosRight(mScreenConfig.getmVirtualWidth() / 16 * 11, mScreenConfig.getmVirtualHeight() - mScreenConfig.getmVirtualHeight() / 12);
     }
 
     private void setResourceStage() {
-        mStage[0].planetList[0].setBitmap(planetTexureHandle[1], 1024, 512, 36);
-        mStage[0].planetList[1].setBitmap(planetTexureHandle[0], 1024, 512, 36);
-        mStage[0].planetList[2].setBitmap(planetTexureHandle[0], 1024, 512, 36);
-        mStage[0].planetList[3].setBitmap(planetTexureHandle[0], 1024, 512, 36);
+        mStage[0].planetList[0].setBitmap(planetTextureHandle[1], 1024, 512, 36);
+        mStage[0].planetList[1].setBitmap(planetTextureHandle[2], 1024, 512, 36);
+        mStage[0].planetList[2].setBitmap(planetTextureHandle[3], 1024, 512, 36);
+        mStage[0].planetList[3].setBitmap(planetTextureHandle[0], 1024, 512, 36);
 
         mSpaceMap.setBitmap(mBitmapLoader.getImageHandle("drawable/milkyafter", true), 1600, 859, 36);
     }
@@ -531,6 +571,21 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
 
     }
 
+    private void setResourceShopScreen() {
+        shopBG.setBitmap(mBitmapLoader.getImageHandle("drawable/shopbackground",false), mScreenConfig.getmVirtualWidth(), mScreenConfig.getmVirtualHeight());
+        shopWF.setBitmap(mBitmapLoader.getImageHandle("drawable/shopframe",false), mScreenConfig.getmVirtualWidth(), mScreenConfig.getmVirtualHeight());
+        shopBlock.setBitmap(mBitmapLoader.getImageHandle("drawable/shopblock",false), mScreenConfig.getmVirtualWidth()/3.5f, mScreenConfig.getmVirtualHeight()/4.0f);
+        shopBuyButton.setBitmap(mBitmapLoader.getImageHandle("drawable/buttonbuy",false), mScreenConfig.getmVirtualWidth()/5.0f, mScreenConfig.getmVirtualHeight()/5.0f);
+        for(int i = 0 ; i < mItemList.item_count; i++) {
+            itemName[i].setBitmap(mBitmapLoader.getHangulHandle(mItemList.getItem(i).getName(), mScreenConfig.getmVirtualHeight() / 15, Color.WHITE, -1, 1.0f, mHangulBitmap.BMJUA, 1), mBitmapLoader.getWordLength(), mScreenConfig.getmVirtualHeight() / 15);
+            itemPrice[i].setBitmap(mBitmapLoader.getHangulHandle(Integer.toString(mItemList.getItem(i).getPrice()) + " G", mScreenConfig.getmVirtualHeight()/16, Color.YELLOW, -1, 1.0f, mHangulBitmap.TRANSFORMERS, 1), mBitmapLoader.getWordLength(), mScreenConfig.getmVirtualHeight() / 16);
+            itemInfo[i].setBitmap(mBitmapLoader.getHangulHandle(mItemList.getItem(i).getInfo(), mScreenConfig.getmVirtualHeight() / 25, Color.WHITE, -1, 1.0f, mHangulBitmap.BMJUA, -1), mBitmapLoader.getWordLength(), mScreenConfig.getmVirtualHeight() / 25);
+            itemAP[i].setBitmap(mBitmapLoader.getHangulHandle("공격력  :"+Integer.toString(mItemList.getItem(i).getAttackPoint()), mScreenConfig.getmVirtualHeight() / 15, Color.WHITE, -1, 1.0f, mHangulBitmap.BMJUA, -1), mBitmapLoader.getWordLength(), mScreenConfig.getmVirtualHeight() / 15);
+            itemWP[i].setBitmap(mBitmapLoader.getHangulHandle("장비점수:"+Integer.toString(mItemList.getItem(i).getWeaponPoint()), mScreenConfig.getmVirtualHeight() / 15, Color.WHITE, -1, 1.0f, mHangulBitmap.BMJUA, -1), mBitmapLoader.getWordLength(), mScreenConfig.getmVirtualHeight() / 15);
+        }
+        itemName[4].setBitmap(mBitmapLoader.getHangulHandle(mItemList.getItem(4).getName(), mScreenConfig.getmVirtualHeight() / 21, Color.WHITE, -1, 1.0f, mHangulBitmap.BMJUA, 1), mBitmapLoader.getWordLength(), mScreenConfig.getmVirtualHeight() / 21);
+    }
+
     private void setResourcePopup() {
         popupWindow.setBitmap(mBitmapLoader.getImageHandle("drawable/popup", false), mScreenConfig.getmVirtualWidth() * 3 / 4, mScreenConfig.getmVirtualHeight() * 3 / 4);
         String[] popupStrs = {" ", "정말로 게임을 종료하시겠습니까?", "진행중인 게임을 포기하고 나가시겠습니까?", "조준 되지 않은 미사일이 있습니다. 턴을 진행하시겠습니까?",
@@ -581,10 +636,11 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         int startFrame = ConstMgr.FRAME_PER_TURN * mStage[ConstMgr.STAGE].turn;
         for (int i = 1; i < mStage[ConstMgr.STAGE].listSize; i++) {
             if (i == userNum) continue;
+            else if (mStage[ConstMgr.STAGE].planetList[i].getHitPoint() <= 0) continue;
             for (int j = 0; j < mStage[ConstMgr.STAGE].planetList[i].getCannonListSize(); j++) {
                 for(int degree = 0 ; degree < 36 ; degree++) {
                     double theta = Math.PI / 36.0 * degree;
-                    Vector3f direction = new Vector3f((float) Math.cos(theta), (float) Math.sin(theta), 0.0f);
+                    Vector3f direction = new Vector3f((float) Math.cos(theta), 0.0f, (float) Math.sin(theta));
                     Vector3f cannonDirection = new Vector3f();
                     cannonDirection.copy(mStage[ConstMgr.STAGE].planetList[i].cannons[j].aim.getShootPos().minus(mStage[ConstMgr.STAGE].planetList[i].getCurrentPos()));
                     if (direction.dot(cannonDirection) < 0) {
@@ -630,7 +686,6 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                 mStage[ConstMgr.STAGE].updatePosInList(ConstMgr.FRAME_PER_TURN * mStage[ConstMgr.STAGE].turn);
             }
         }
-
     }
 
     // 시뮬레이션 후에 하는일
@@ -734,6 +789,10 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             }
             case ConstMgr.SCREEN_EQUIP: {
                 RenderEquip(mMtrxProjectionAndView, mMtrxOrthoAndView);
+                break;
+            }
+            case ConstMgr.SCREEN_SHOP: {
+                RenderShop(mMtrxProjectionAndView, mMtrxOrthoAndView);
                 break;
             }
             case ConstMgr.SCREEN_TEST: {
@@ -1189,6 +1248,17 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mInven.draw(orth);
     }
 
+    private void RenderShop(float[] pv, float[] orth) {
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+        GLES20.glDisable(GLES20.GL_DEPTH_TEST);
+        float[] tempMatrix = new float[16];
+        float[] modelMatrix = new float[16];
+        mShop.draw(orth);
+    }
+
     private void RenderTest(float[] pv, float[] orth) {
         GLES20.glUseProgram(mProgramImage);
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, fboId);
@@ -1259,6 +1329,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     boolean rotating = false;
     boolean touchingEarth = false;
     boolean touchingEquipWindow =false;
+    boolean touchingShopItem = false;
     float startingAngle = 0.0f;
 
     private int mPointerId;
@@ -1298,6 +1369,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                         mUserData.setGold(mUserData.getGold() + 100);
                         mUserGoldChanged = true;
                         mGLSurfaceView.onUpdateCall();
+                        ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_SHOP;
 
                         mUserData.saveSaveData();
                     } else if (mMainButtons[2].isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
@@ -1600,6 +1672,45 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                     }
                     break;
             }
+            //상점 이벤트
+        } else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_SHOP) {
+            switch (action) {
+                case MotionEvent.ACTION_DOWN:
+                    switch (mShop.isSelected(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y))) {
+                        case Shop.ITEM: {
+                            touchingShopItem = true;
+                            break;
+                        }
+                        case Shop.BUTTON: {
+                            break;
+                        }
+                    }
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    if(mShop.getIsScroll()) {
+                        mShop.setScroll(mScreenConfig.deviceToVirtualY(y));
+                    }
+                    else if(touchingShopItem) {
+                        mShop.checkAndStartScroll(mScreenConfig.deviceToVirtualX(x), mScreenConfig.deviceToVirtualY(y));
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                    if(touchingShopItem) {
+                        if(mShop.getIsScroll()) {
+                            mShop.endScroll();
+                        } else {
+                            mShop.checkItem(mScreenConfig.deviceToVirtualX(x),mScreenConfig.deviceToVirtualY(y));
+                        }
+                    }
+                    touchingShopItem = false;
+                    if(mShop.isSelected(mScreenConfig.deviceToVirtualX(x),mScreenConfig.deviceToVirtualY(y)) == mShop.BUTTON) {
+                        if(mShop.buy()) {
+                            mUserGoldChanged = true;
+                            mGLSurfaceView.onUpdateCall();
+                        };
+                    }
+                    break;
+            }
         } else if (ConstMgr.SCREEN_MODE == ConstMgr.SCREEN_TEST) {
             switch (action) {
                 case MotionEvent.ACTION_DOWN:
@@ -1822,6 +1933,9 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                 break;
             }
             case ConstMgr.SCREEN_EQUIP: {
+                ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_MAIN;
+            }
+            case ConstMgr.SCREEN_SHOP: {
                 ConstMgr.SCREEN_MODE = ConstMgr.SCREEN_MAIN;
             }
         }

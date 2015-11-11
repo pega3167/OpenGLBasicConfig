@@ -191,5 +191,10 @@ public class UserData {
     public void setInventorySize(int inventorySize) {
         this.inventorySize = inventorySize;
     }
+    public void addItem(int i) {
+        inventory[itemSize] = i;
+        itemSize++;
+        Log.e("itemSize",""+itemSize);
+    }
 }
 

@@ -25,7 +25,7 @@ public class Inventory {
     MainGLRenderer mGLRenderer;
     ItemList itemDB;
     //private Square scrollBar;
-    private int itemSize;
+    //private int itemSize;
     private int invenSize;
     private boolean isActive;
     private float posX;
@@ -71,7 +71,6 @@ public class Inventory {
         this.unEquipButton = unEquipBtn;
         this.equipFrame = equipFrame;
         this.mUserData = mUserData;
-        this.itemSize = mUserData.getItemSize();
         this.invenSize = mUserData.getInventorySize();
         this.virtWidth = vertWidth;
         this.virtHeight = vertHeight;
@@ -121,7 +120,7 @@ public class Inventory {
             } else if (offSetY - i/2 * itemHeight + scroll < offSetY - 3.0 * itemHeight) {
                 break;
             } else {
-                if (i < itemSize) {
+                if (i < mUserData.getItemSize()) {
                     itemDB.getItem(mUserData.getInventory(i)).getIcon().setPos(offSetX + i % 2 * itemWidth, offSetY - i / 2 * itemHeight + scroll);
                     itemDB.getItem(mUserData.getInventory(i)).getIcon().draw(m);
                 } else {
@@ -138,7 +137,7 @@ public class Inventory {
             equiped.setPos(offSetX + i % 2 * itemWidth, offSetY - i / 2 * itemHeight + scroll);
             equiped.draw(m);
         }
-        if(selectIndex < itemSize && !(offSetY - selectIndex/2 * itemHeight + scroll > offSetY + itemHeight) && !(offSetY - selectIndex/2 * itemHeight + scroll < offSetY - 3.0 * itemHeight)) {
+        if(selectIndex < mUserData.getItemSize() && !(offSetY - selectIndex/2 * itemHeight + scroll > offSetY + itemHeight) && !(offSetY - selectIndex/2 * itemHeight + scroll < offSetY - 3.0 * itemHeight)) {
             if(selectIndex != -1) {
                 selected.setPos(offSetX + selectIndex % 2 * itemWidth, offSetY - selectIndex / 2 * itemHeight + scroll);
                 selected.draw(m);
@@ -171,9 +170,9 @@ public class Inventory {
 
     public int isSelected(float x, float y) {
         if ((offSetX - itemWidth / 2.0f <= x && offSetX + itemWidth * 1.5f >= x) && (offSetY + itemHeight / 2.0f >= y && offSetY - itemHeight * 2.5 <= y)) {
-            // item 부분 누름 스크롤or아이템 선택
-            startX = x;
-            startY = y;
+                // item 부분 누름 스크롤or아이템 선택
+                startX = x;
+                startY = y;
             return ITEM;
         } else if (equipButton.isSelectedNoSound((int) x, (int) y)) {
             // 장착 버튼 눌름.
@@ -192,7 +191,7 @@ public class Inventory {
             Toast.makeText(mGLRenderer.mActivity, "장착할 아이템을 선택해주세요", Toast.LENGTH_SHORT).show();
             return;
         }
-        else if(selectIndex < itemSize) {
+        else if(selectIndex < mUserData.getItemSize()) {
             //선택한 아이템을 장착
             if(mSelectPos.x == 0 && mSelectPos.y == 0 && mSelectPos.z == 0) {
                 Toast.makeText(mGLRenderer.mActivity, "설치할 위치를 선택하세요.", Toast.LENGTH_SHORT).show();
