@@ -118,7 +118,7 @@ public class UserData {
             Log.e("Error", "Failed saving");
         }
     }
-    public void equipCannon(ParticleSystem particleSystem) {
+    public void equipCannon(ParticleSystem particleSystem, float radius) {
         particleSystem.clearBuffer();
         particleSystem.clearEmitterList();
         userPlanet.clearCannonList();
@@ -126,7 +126,11 @@ public class UserData {
             if(equipList[i].DBindex != -1) {
                 int index = equipList[i].DBindex;
                 int j = particleSystem.addEmitter();
-                userPlanet.addCannon(equipList[i].pos, itemDB.getItem(index).getAttackPoint(), 0.05f, itemDB.getItem(index).getType(), j);
+                Vector3f temp = new Vector3f(equipList[i].pos.x, equipList[i].pos.y, equipList[i].pos.z);
+                temp.y = 0;
+                temp.normalize();
+                temp.copy(temp.multScalar(radius));
+                userPlanet.addCannon(temp, itemDB.getItem(index).getAttackPoint(), 0.05f, itemDB.getItem(index).getType(), j);
             } else
                 break;
         }

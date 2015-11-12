@@ -90,6 +90,10 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     Square[] itemWP;
     Square[] itemInfo;
     Square[] itemPrice;
+    //HPbar
+    Square mHPBarBG;
+    Square mHPBarFrame;
+    Square mHPBar;
 
     // 화면 버튼
     Button mIntroButtons[];
@@ -450,6 +454,13 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mShootButton = new Button(mProgramImage, mProgramSolidColor, this);
         mShootButton.setPos(mScreenConfig.getmVirtualWidth() * 11 / 12, mScreenConfig.getmVirtualWidth() / 12);
         mShootButton.setIsActive(true);
+        //HPbar
+        mHPBarBG = new Square(mProgramImage);
+        mHPBarBG.setIsActive(true);
+        mHPBarFrame = new Square(mProgramImage);
+        mHPBarFrame.setIsActive(true);
+        mHPBar = new Square(mProgramImage);
+        mHPBar.setIsActive(true);
         setResourceGameScreen();
     }
 
@@ -487,6 +498,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         setResourceEquipScreen();
         setResourceShopScreen();
         setResourcePopup();
+        recoverMissileButton();
     }
 
     private void setResourceObject() {
@@ -556,6 +568,24 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mShootButton.setBitmap(mBitmapLoader.getImageHandle("drawable/launch", false), mScreenConfig.getmVirtualWidth() / 6.0f, mScreenConfig.getmVirtualWidth() / 6.0f);
         mSelectedPlanet.setBitmap(mBitmapLoader.getImageHandle("drawable/selected", false));
         mAtmo.setBitmap(mBitmapLoader.getImageHandle("drawable/atmo2", false));
+        //HPbar
+        mHPBarBG.setBitmap(mBitmapLoader.getImageHandle("drawable/hpbarbackground", false), mScreenConfig.getmVirtualWidth() / 2.0f, mScreenConfig.getmVirtualHeight() / 9.0f);
+        mHPBarFrame.setBitmap(mBitmapLoader.getImageHandle("drawable/hpbarframe",false), mScreenConfig.getmVirtualWidth() / 2.0f, mScreenConfig.getmVirtualHeight() / 9.0f);
+        mHPBar.setBitmap(mBitmapLoader.getImageHandle("drawable/hpbar", false), mScreenConfig.getmVirtualWidth() / 2.0f, mScreenConfig.getmVirtualHeight() / 9.0f);
+        mHPBarBG.setPosLeft(mScreenConfig.getmVirtualWidth()*0.05f, 11 * mScreenConfig.getmVirtualHeight() / 12);
+        mHPBarFrame.setPosLeft(mScreenConfig.getmVirtualWidth()*0.05f, 11 * mScreenConfig.getmVirtualHeight() / 12);
+        mHPBar.setPosLeft(mScreenConfig.getmVirtualWidth()*0.05f, 11 * mScreenConfig.getmVirtualHeight() / 12);
+    }
+
+    private void recoverMissileButton() {
+        for (int i = 0; i < mUserData.userPlanet.getCannonListSize(); i++) {
+            try {
+                mMissileButton[i].setBitmap(mBitmapLoader.getImageHandle("drawable/item" + mUserData.equipList[i].DBindex, false), mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
+                mStageSelected = false;
+            } catch (Exception e) {
+                mMissileButton[i].setBitmap(mBitmapLoader.getImageHandle("drawable/blank" + mUserData.equipList[i].DBindex, false), mScreenConfig.getmVirtualHeight() / 6, mScreenConfig.getmVirtualHeight() / 6);
+            }
+        }
     }
 
     private void setResourceEquipScreen() {
@@ -614,11 +644,20 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         if(ConstMgr.RENDER_MODE == ConstMgr.RENDER_ANIMATION) {
             for(int i = 0 ; i < mStage[ConstMgr.STAGE].listSize; i++) {
                 for(int j = 0 ; j < mStage[ConstMgr.STAGE].planetList[i].getCannonListSize(); j++) {
+                    if(!mStage[ConstMgr.STAGE].planetList[i].cannons[j].aim.getIsAimed()) {
+                        continue;
+                    }
                     if(mStage[ConstMgr.STAGE].planetList[i].cannons[j].missile.getIsHit() && mStage[ConstMgr.STAGE].planetList[i].cannons[j].missile.getLife() <= (frame - mStage[ConstMgr.STAGE].turnStartFrame)) {
                         int damage = mStage[ConstMgr.STAGE].planetList[i].cannons[j].getAttackPoint();
                         int hitPlanetIndex = mStage[ConstMgr.STAGE].planetList[i].cannons[j].missile.getHitPlanet();
                         mStage[ConstMgr.STAGE].planetList[hitPlanetIndex].setDamage(damage);
                         mStage[ConstMgr.STAGE].planetList[i].cannons[j].missile.setIsHit(false);
+                        //HPbar
+                        if(hitPlanetIndex == mStage[ConstMgr.STAGE].userNum) {
+                            float scale = mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getHitPoint() / (float) mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getMaxHitPoint();
+                            mHPBar.setmWidth(mScreenConfig.getmVirtualWidth()/2*scale);
+                            mHPBar.setPosLeft(mScreenConfig.getmVirtualWidth()*0.05f, 11 * mScreenConfig.getmVirtualHeight() / 12);
+                        }
                     }
                 }
             }
@@ -1152,6 +1191,10 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         for (int i = 0; i < 2; i++) {
             mModeButton[i].draw(orth);
         }
+        //HPBar
+        mHPBarBG.draw(orth);
+        mHPBar.draw(orth);
+        mHPBarFrame.draw(orth);
         // popup
         mPopup.draw(orth);
         // Pause
@@ -1410,7 +1453,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                             mStage[ConstMgr.STAGE].currentFrame = 0;
                             mStage[ConstMgr.STAGE].turn = 0;
                             //유저행성 캐논장착 + 파티클시스템 연결
-                            mUserData.equipCannon(mParticleSystem);
+                            mUserData.equipCannon(mParticleSystem, mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getRadius());
                             //적 행성 캐논 파티클시스템에 재연결
                             for(int j = 1 /*태양은 제외 해도 됨*/ ; j < mStage[ConstMgr.STAGE].listSize; j++) {
                                 for(int k = 0; k < mStage[ConstMgr.STAGE].planetList[j].getCannonListSize() ; k++) {
@@ -2207,5 +2250,4 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             mUserLevelChanged = false;
         }
     }
-
 }

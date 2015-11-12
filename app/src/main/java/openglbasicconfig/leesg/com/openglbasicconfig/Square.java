@@ -67,6 +67,10 @@ public class Square {
         mHandleBitmap = handle;
     }
     // 이미지 가로, 세로 반환
+    public void setmWidth( float width) {
+        mWidth = width;
+        setupBuffer();
+    }
     //객체의 높이를 반환
     public float getHeight() {return this.mHeight;}
     //객체의 폭을 반환
