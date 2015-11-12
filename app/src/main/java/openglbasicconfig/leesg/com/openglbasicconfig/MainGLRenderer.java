@@ -94,6 +94,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     Square mHPBarBG;
     Square mHPBarFrame;
     Square mHPBar;
+    Square mHPBarInfo;
 
     // 화면 버튼
     Button mIntroButtons[];
@@ -141,6 +142,9 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
     Square3D mSelectedPlanet;
     boolean mSelectPlanet_flag = false;
     int mSelectPlanet_count = 0;
+
+    //HPBarInfo
+    boolean mSelectPlanetChanged = false;
 
     Square3D mAtmo;
 
@@ -461,6 +465,9 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mHPBarFrame.setIsActive(true);
         mHPBar = new Square(mProgramImage);
         mHPBar.setIsActive(true);
+        //HPBarInfo
+        mHPBarInfo = new Square(mProgramImage);
+        mHPBarInfo.setIsActive(true);
         setResourceGameScreen();
     }
 
@@ -575,6 +582,15 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         mHPBarBG.setPosLeft(mScreenConfig.getmVirtualWidth()*0.05f, 11 * mScreenConfig.getmVirtualHeight() / 12);
         mHPBarFrame.setPosLeft(mScreenConfig.getmVirtualWidth()*0.05f, 11 * mScreenConfig.getmVirtualHeight() / 12);
         mHPBar.setPosLeft(mScreenConfig.getmVirtualWidth()*0.05f, 11 * mScreenConfig.getmVirtualHeight() / 12);
+        //HPBarInfo
+        try {
+            String temp = Integer.toString(mStage[ConstMgr.STAGE].planetList[mSelectPlanet_count].getHitPoint()) + "/" + Integer.toString(mStage[ConstMgr.STAGE].planetList[mSelectPlanet_count].getMaxHitPoint());
+            mHPBarInfo.setBitmap(mBitmapLoader.getHangulHandle(temp, mScreenConfig.getmVirtualHeight() / 15, Color.WHITE, -1, 1.0f, mHangulBitmap.TRANSFORMERS, 1), mBitmapLoader.getWordLength(), mScreenConfig.getmVirtualHeight() / 15);
+            mHPBarInfo.setPos(mScreenConfig.getmVirtualWidth() / 4.0f, 11 * mScreenConfig.getmVirtualHeight() / 12.0f);
+        } catch(Exception e) {
+            mHPBarInfo.setBitmap(mBitmapLoader.getHangulHandle( "0/0", mScreenConfig.getmVirtualHeight() / 15, Color.WHITE, -1, 1.0f, mHangulBitmap.TRANSFORMERS, 1), mBitmapLoader.getWordLength(), mScreenConfig.getmVirtualHeight() / 15);
+            mHPBarInfo.setPos(mScreenConfig.getmVirtualWidth() / 4.0f, 11 * mScreenConfig.getmVirtualHeight() / 12.0f);
+        }
     }
 
     private void recoverMissileButton() {
@@ -652,11 +668,10 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
                         int hitPlanetIndex = mStage[ConstMgr.STAGE].planetList[i].cannons[j].missile.getHitPlanet();
                         mStage[ConstMgr.STAGE].planetList[hitPlanetIndex].setDamage(damage);
                         mStage[ConstMgr.STAGE].planetList[i].cannons[j].missile.setIsHit(false);
-                        //HPbar
-                        if(hitPlanetIndex == mStage[ConstMgr.STAGE].userNum) {
-                            float scale = mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getHitPoint() / (float) mStage[ConstMgr.STAGE].planetList[mStage[ConstMgr.STAGE].userNum].getMaxHitPoint();
-                            mHPBar.setmWidth(mScreenConfig.getmVirtualWidth()/2*scale);
-                            mHPBar.setPosLeft(mScreenConfig.getmVirtualWidth()*0.05f, 11 * mScreenConfig.getmVirtualHeight() / 12);
+                        //HpBarInfo
+                        if(mSelectPlanet_count == hitPlanetIndex) {
+                            mSelectPlanetChanged = true;
+                            mGLSurfaceView.onUpdateCall();
                         }
                     }
                 }
@@ -1008,6 +1023,25 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
 
         /////////////////////////
         if(mSelectPlanet_flag) {
+            //
+            float[] planetModelMatrix = new float[16];
+            Matrix.setIdentityM(tempMatrix, 0);
+            Matrix.setIdentityM(planetModelMatrix, 0);
+            Matrix.scaleM(tempMatrix, 0, mStage[ConstMgr.STAGE].planetList[mSelectPlanet_count].getRadius(), mStage[ConstMgr.STAGE].planetList[mSelectPlanet_count].getRadius(), mStage[ConstMgr.STAGE].planetList[mSelectPlanet_count].getRadius());
+            Matrix.multiplyMM(planetModelMatrix, 0, tempMatrix, 0, planetModelMatrix, 0);
+            Matrix.setIdentityM(tempMatrix, 0);
+            Matrix.rotateM(tempMatrix, 0, mStage[ConstMgr.STAGE].currentFrame * mStage[ConstMgr.STAGE].planetList[mSelectPlanet_count].getRotationSpeed(), 0.0f, 1.0f, 0.0f);
+            Matrix.multiplyMM(planetModelMatrix, 0, tempMatrix, 0, planetModelMatrix, 0);
+            Matrix.setIdentityM(tempMatrix, 0);
+            Matrix.translateM(tempMatrix, 0, mStage[ConstMgr.STAGE].planetList[mSelectPlanet_count].getOrbitRadius(), 0.0f, 0.0f);
+            Matrix.multiplyMM(planetModelMatrix, 0, tempMatrix, 0, planetModelMatrix, 0);
+            Matrix.setIdentityM(tempMatrix, 0);
+            Matrix.rotateM(tempMatrix, 0, mStage[ConstMgr.STAGE].currentFrame * mStage[ConstMgr.STAGE].planetList[mSelectPlanet_count].getRevolutionSpeed(), 0.0f, 1.0f, 0.0f);
+            Matrix.multiplyMM(planetModelMatrix, 0, tempMatrix, 0, planetModelMatrix, 0);
+            //현재 행성 위치 업데이트
+            temp.setXYZ(0, 0, 0);
+            temp.multM(planetModelMatrix, 1.0f);
+            //
             GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "renderMode"), 5.0f);
             GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "color_R"), 1.0f);
             GLES20.glUniform1f(GLES20.glGetUniformLocation(mProgramImage, "color_G"), 1.0f);
@@ -1026,7 +1060,7 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             Vector3f.setRotate(tempMatrix, axis1, angle);
             Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
             Matrix.setIdentityM(tempMatrix, 0);
-            Matrix.translateM(tempMatrix, 0, mStage[ConstMgr.STAGE].planetList[mSelectPlanet_count].getCurrentPos().x, mStage[ConstMgr.STAGE].planetList[mSelectPlanet_count].getCurrentPos().y, mStage[ConstMgr.STAGE].planetList[mSelectPlanet_count].getCurrentPos().z);
+            Matrix.translateM(tempMatrix, 0, temp.x, temp.y, temp.z);
             Matrix.multiplyMM(modelMatrix, 0, tempMatrix, 0, modelMatrix, 0);
             Matrix.multiplyMM(modelMatrix, 0, pv, 0, modelMatrix, 0);
 
@@ -1192,9 +1226,17 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             mModeButton[i].draw(orth);
         }
         //HPBar
-        mHPBarBG.draw(orth);
-        mHPBar.draw(orth);
-        mHPBarFrame.draw(orth);
+        if(mSelectPlanet_flag && mSelectPlanet_count != 0) {
+            mHPBarBG.draw(orth);
+            float scale = mStage[ConstMgr.STAGE].planetList[mSelectPlanet_count].getHitPoint() / (float) mStage[ConstMgr.STAGE].planetList[mSelectPlanet_count].getMaxHitPoint();
+            mHPBar.setmWidth(mScreenConfig.getmVirtualWidth()/2*scale);
+            mHPBar.setPosLeft(mScreenConfig.getmVirtualWidth() * 0.05f, 11 * mScreenConfig.getmVirtualHeight() / 12);
+            mHPBar.draw(orth);
+            mHPBarFrame.draw(orth);
+            //HPBarInfo
+            mHPBarInfo.draw(orth);
+        }
+
         // popup
         mPopup.draw(orth);
         // Pause
@@ -1892,6 +1934,9 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
             else {
                 mSelectPlanet_flag = true;
                 mSelectPlanet_count = result;
+                //HPBarInfo
+                mSelectPlanetChanged = true;
+                mGLSurfaceView.onUpdateCall();
             }
         }
         else{
@@ -2246,8 +2291,15 @@ public class MainGLRenderer implements GLSurfaceView.Renderer {
         }
         if (mUserLevelChanged) {
             mLevelFont.setBitmap(mBitmapLoader.getHangulHandle(Integer.toString(mUserData.getLevel()), mScreenConfig.getmVirtualHeight() / 15, Color.WHITE, -1, 1.0f, mHangulBitmap.TRANSFORMERS, 1), mBitmapLoader.getWordLength(), mScreenConfig.getmVirtualHeight() / 15);
-            mLevelFont.setPosRight(mScreenConfig.getmVirtualWidth() / 16 * 5, mScreenConfig.getmVirtualHeight() - mScreenConfig.getmVirtualHeight() / 12);
+            mLevelFont.setPosRight(mScreenConfig.getmVirtualWidth() / 16 * 5, mScreenConfig.getmVirtualHeight() - mScreenConfig.getmVirtualHeight() / 12.0f);
             mUserLevelChanged = false;
+        }
+        //HPBarInfo
+        if (mSelectPlanetChanged) {
+            String temp = Integer.toString(mStage[ConstMgr.STAGE].planetList[mSelectPlanet_count].getHitPoint()) + "/" + Integer.toString(mStage[ConstMgr.STAGE].planetList[mSelectPlanet_count].getMaxHitPoint());
+            mHPBarInfo.setBitmap(mBitmapLoader.getHangulHandle( temp, mScreenConfig.getmVirtualHeight() / 15, Color.WHITE, -1, 1.0f, mHangulBitmap.TRANSFORMERS, 1), mBitmapLoader.getWordLength(), mScreenConfig.getmVirtualHeight() / 15);
+            mHPBarInfo.setPos(mScreenConfig.getmVirtualWidth() / 4.0f, 11 * mScreenConfig.getmVirtualHeight() / 12.0f);
+            mSelectPlanetChanged = false;
         }
     }
 }
